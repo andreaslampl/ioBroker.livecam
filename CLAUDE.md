@@ -16,6 +16,16 @@ existing cameras adapter lost its images after a while and needed restarts.
 - `lib/onvif.js` – WS-Security UsernameToken digest, camera clock offset, GetCapabilities ->
   GetProfiles -> GetStreamUri / GetSnapshotUri; replaces hostnames in returned URIs.
 - `lib/jpeg.js` – splits JPEG frames by SOI/EOI markers.
+- `lib/sip.js` – minimal SIP UAS over UDP for peer-to-peer calls from the 2N IP Verso 2.0
+  (no PBX): INVITE/100/180/200 (+retransmit until ACK), CANCEL->487, BYE both ways,
+  only `intercomHost` may call (403 otherwise).
+- `lib/sdp.js` – G.711 (caller's preference order) + telephone-event; video m-lines declined.
+- `lib/intercom.js` – bridges intercom RTP <-> browser WebRTC (werift) without transcoding;
+  browsers connect via `/ws`; first browser to answer gets the call; door via DTMF
+  (RFC 4733) or 2N HTTP API `/api/switch/ctrl`.
+- `lib/view.js` – `/view` camera wall for the owner's Windows touch PC in VIS-2 (iframe in an
+  HTML widget with `allow="microphone; autoplay"`); ring tone via Web Audio; reloads
+  images after adapter restarts (detected via the WebSocket).
 - `test/` – `node --test`, uses real ffmpeg (`testsrc`) and fake cameras from `test/helpers.js`.
 
 ## Conventions
@@ -25,5 +35,10 @@ existing cameras adapter lost its images after a while and needed restarts.
 - Install on the ioBroker host: `iobroker url https://github.com/andreaslampl/ioBroker.livecam`;
   ffmpeg must be installed there (`sudo apt install ffmpeg`).
 - Run `npm test` before committing.
-- Not yet tested against the real cameras; manufacturer URLs in the README are typical
-  examples, not verified on the owner's devices.
+- Not yet tested against the real cameras or the real 2N; manufacturer URLs in the README
+  are typical examples. Before this adapter the owner answered the 2N with MicroSIP
+  (peer-to-peer SIP), which works - useful as a reference when debugging.
+- Browser mic needs a secure context: on the touch PC the http origins are whitelisted via
+  `edge://flags/#unsafely-treat-insecure-origin-as-secure`.
+- A real-browser check (Playwright + headless Chromium, fake mic) passed; it is not part of
+  `npm test` because it needs Playwright.

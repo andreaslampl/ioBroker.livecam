@@ -16,6 +16,9 @@ Zeit verschwinden:
 - Die Kamera wird nur abgefragt, **solange jemand zuschaut** (optional „Immer an“).
 - **ONVIF:** IP-Adresse eintragen, die Stream-Adresse wird automatisch gefunden.
 - **Digest-Anmeldung** (Axis, Hanwha, Sony, 2N …) wird unterstützt.
+- **Kamerawand mit Türsprechstelle:** Beim Klingeln (z. B. 2N IP Verso) wird die Türkamera groß,
+  ein Klingelton spielt, **Abnehmen, Auflegen und Tür öffnen** direkt im Browser, mit
+  Gegensprechen über Mikrofon und Lautsprecher des Touch-PCs. Keine Telefonanlage nötig.
 
 ## Voraussetzung: ffmpeg
 
@@ -85,6 +88,67 @@ Eine Übersicht aller Kameras gibt es unter `http://<ioBroker-IP>:8095/`.
 gleichzeitig. Für mehr Kameras auf einer Seite die **snapshotUrl** mit einem
 Aktualisierungsintervall (z. B. 1 s) verwenden.
 
+## Kamerawand mit Türsprechstelle (2N)
+
+Die Seite **`http://<ioBroker-IP>:8095/view`** zeigt alle Kameras im Raster. Ist die
+Türsprechstelle aktiviert und es klingelt, wird die Türkamera bildschirmfüllend angezeigt, mit
+Klingelton und den Knöpfen **Abnehmen / Ablehnen / Auflegen / Tür öffnen**. Gesprochen wird über
+Mikrofon und Lautsprecher des Geräts, auf dem die Seite läuft. Klingelt es an mehreren
+Bildschirmen, nimmt der ab, der zuerst drückt; die anderen zeigen „Gespräch an einem anderen Gerät“.
+
+Nur bestimmte Kameras anzeigen: `…/view?cams=haustuer,garten,einfahrt,garage`
+
+### 1. Adapter (Reiter „Türsprechstelle“)
+
+| Einstellung | Wert |
+| --- | --- |
+| Türsprechstelle aktivieren | ✔ |
+| IP-Adresse der Türsprechstelle | IP der 2N, nur sie darf anrufen |
+| SIP-Port | `5060` |
+| Kameraname der Türsprechstelle | Name wie in der Kameratabelle, z. B. `Haustür` |
+| Tür öffnen über | **Tastencode (DTMF)** mit dem in der 2N eingestellten Schaltcode, oder **2N HTTP-API** |
+
+### 2. 2N IP Verso (Weboberfläche)
+
+1. *Dienste → Telefon → SIP:* Peer-to-Peer-Anrufe (Direktwahl per IP) erlauben.
+2. *Verzeichnis → Benutzer:* einen Benutzer anlegen, Telefonnummer
+   **`sip:tuer@<ioBroker-IP>:5060`** und ihn der Klingeltaste zuweisen.
+3. Für „Tür öffnen“ per Tastencode: unter *Hardware → Schalter* einen **Code** für den
+   Türöffner festlegen und denselben Code im Adapter eintragen.
+4. Audio-Codec: **G.711** (PCMU/PCMA) muss erlaubt sein (Standard).
+
+MicroSIP kann parallel weiter als zweites Ziel eingetragen bleiben, bis alles läuft.
+
+### 3. Touch-PC (Microsoft Edge oder Chrome)
+
+Browser erlauben das Mikrofon nur auf „sicheren“ Seiten (https). Für eine Seite im eigenen
+Heimnetz gibt man die Adresse einmalig frei:
+
+1. In der Adresszeile **`edge://flags/#unsafely-treat-insecure-origin-as-secure`** öffnen
+   (Chrome: `chrome://flags/…`).
+2. Ins Feld beide Adressen eintragen, mit Komma getrennt, z. B.
+   **`http://10.0.0.5:8095,http://10.0.0.5:8082`** (Livecam-Port und VIS-2-Port).
+3. Auf **Enabled** stellen und den Browser neu starten.
+4. **Klingelton erlauben:** `edge://settings/content/mediaAutoplay` → **Zulassen** und die beiden
+   Adressen hinzufügen. Ohne diese Einstellung erklingt der Ton erst nach der ersten Berührung.
+5. Beim ersten Abnehmen fragt der Browser nach dem Mikrofon: **Zulassen** (dauerhaft).
+
+### 4. VIS-2
+
+Ein Widget **Basic → HTML** über den ganzen Bildschirm legen und als HTML eintragen
+(IP und Port anpassen):
+
+```html
+<iframe src="http://10.0.0.5:8095/view" allow="microphone; autoplay"
+        style="width:100%;height:100%;border:0"></iframe>
+```
+
+Wichtig ist `allow="microphone; autoplay"`, sonst blockiert der Browser Mikrofon und Klingelton
+im eingebetteten Fenster. Die fertige Adresse steht auch im Datenpunkt `livecam.0.info.viewUrl`.
+
+**Netzwerk:** Der ioBroker-Server braucht eingehend **UDP 5060** (SIP) und freie UDP-Ports für
+den Ton. In einem normalen Heimnetz ohne Firewall auf dem Server ist nichts zu tun.
+
 ## Datenpunkte
 
 | Datenpunkt | Bedeutung |
@@ -96,6 +160,13 @@ Aktualisierungsintervall (z. B. 1 s) verwenden.
 | `cameras.<name>.fps` | tatsächliche Bilder pro Sekunde |
 | `cameras.<name>.viewers` | aktuelle Zuschauer |
 | `cameras.<name>.lastError` | letzter Fehler (leer = alles ok) |
+| `info.viewUrl` | Adresse der Kamerawand für VIS-2 |
+| `intercom.ringing` | es klingelt (z. B. für Licht, Telegram, Durchsage) |
+| `intercom.active` | Gespräch läuft |
+| `intercom.state` | `idle` / `ringing` / `connecting` / `active` |
+| `intercom.caller`, `intercom.lastRing` | Anrufer, Zeitpunkt des letzten Klingelns |
+| `intercom.openDoor` | **Knopf:** Tür öffnen (HTTP-API jederzeit, Tastencode nur im Gespräch) |
+| `intercom.hangup` | **Knopf:** auflegen bzw. ablehnen |
 
 ## Sicherheit
 
@@ -112,6 +183,8 @@ npm test
 
 Die Tests lassen echtes ffmpeg gegen eine simulierte Kamera laufen, inklusive einer Kamera,
 die mitten im Betrieb hängen bleibt, Digest-Anmeldung, ONVIF und einem hängenden Zuschauer.
+Die Türsprechstelle wird mit einer simulierten 2N (SIP + RTP) und einem WebRTC-Gegenüber
+getestet: Klingeln, Abnehmen, Ton in beide Richtungen, Türcode, Auflegen, Abbruch.
 
 ## Lizenz
 

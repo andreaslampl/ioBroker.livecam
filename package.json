@@ -12,14 +12,35 @@
   "bugs": {
     "url": "https://github.com/andreaslampl/ioBroker.livecam/issues"
   },
-  "keywords": ["ioBroker", "camera", "Kamera", "RTSP", "ONVIF", "MJPEG", "VIS-2", "Axis", "Hanwha", "Mobotix", "2N"],
+  "keywords": [
+    "ioBroker",
+    "camera",
+    "Kamera",
+    "RTSP",
+    "ONVIF",
+    "MJPEG",
+    "VIS-2",
+    "Axis",
+    "Hanwha",
+    "Mobotix",
+    "2N"
+  ],
   "main": "main.js",
-  "files": ["admin/", "lib/", "main.js", "io-package.json", "LICENSE", "README.md"],
+  "files": [
+    "admin/",
+    "lib/",
+    "main.js",
+    "io-package.json",
+    "LICENSE",
+    "README.md"
+  ],
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
-    "@iobroker/adapter-core": "^3.2.3"
+    "@iobroker/adapter-core": "^3.2.3",
+    "werift": "^0.25.1",
+    "ws": "^8.18.0"
   },
   "scripts": {
     "test": "node --test --test-timeout=60000 test/*.test.js"

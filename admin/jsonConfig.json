@@ -164,6 +164,122 @@
           "md": 4
         }
       }
+    },
+    "tabIntercom": {
+      "type": "panel",
+      "label": "Intercom",
+      "items": {
+        "icHelp": {
+          "type": "staticText",
+          "text": "The intercom (e.g. 2N IP Verso) calls ioBroker directly (peer-to-peer SIP, no PBX). In the intercom enter as phone number: sip:door@<ioBroker IP>. In VIS-2 embed the camera wall (info.viewUrl) in an HTML widget.",
+          "xs": 12
+        },
+        "intercomEnabled": {
+          "type": "checkbox",
+          "label": "Enable intercom",
+          "newLine": true,
+          "xs": 12
+        },
+        "intercomHost": {
+          "type": "text",
+          "label": "IP address of the intercom",
+          "help": "Only this device may call (recommended)",
+          "hidden": "!data.intercomEnabled",
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        },
+        "sipPort": {
+          "type": "number",
+          "label": "SIP port (UDP)",
+          "default": 5060,
+          "min": 1,
+          "max": 65535,
+          "hidden": "!data.intercomEnabled",
+          "xs": 12,
+          "sm": 6,
+          "md": 2
+        },
+        "intercomCamera": {
+          "type": "text",
+          "label": "Camera name of the intercom",
+          "help": "As entered in the camera table; shown full screen while ringing",
+          "hidden": "!data.intercomEnabled",
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        },
+        "ringTimeout": {
+          "type": "number",
+          "label": "Ring timeout (s)",
+          "default": 60,
+          "min": 10,
+          "hidden": "!data.intercomEnabled",
+          "xs": 12,
+          "sm": 6,
+          "md": 2
+        },
+        "doorMethod": {
+          "type": "select",
+          "label": "Open door via",
+          "hidden": "!data.intercomEnabled",
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 3,
+          "options": [
+            {
+              "label": "Key code during the call (DTMF)",
+              "value": "dtmf"
+            },
+            {
+              "label": "2N HTTP API",
+              "value": "http"
+            },
+            {
+              "label": "not used",
+              "value": "none"
+            }
+          ]
+        },
+        "doorCode": {
+          "type": "password",
+          "label": "Door code (DTMF)",
+          "help": "Switch code configured in the intercom, e.g. 00*",
+          "hidden": "!data.intercomEnabled || data.doorMethod !== 'dtmf'",
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        },
+        "doorSwitch": {
+          "type": "number",
+          "label": "Switch number",
+          "default": 1,
+          "min": 1,
+          "max": 4,
+          "hidden": "!data.intercomEnabled || data.doorMethod !== 'http'",
+          "xs": 12,
+          "sm": 6,
+          "md": 2
+        },
+        "intercomUser": {
+          "type": "text",
+          "label": "HTTP API user",
+          "hidden": "!data.intercomEnabled || data.doorMethod !== 'http'",
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        },
+        "intercomPassword": {
+          "type": "password",
+          "label": "HTTP API password",
+          "hidden": "!data.intercomEnabled || data.doorMethod !== 'http'",
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        }
+      }
     }
   }
 }

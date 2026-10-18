@@ -4,8 +4,8 @@
     "version": "0.1.0",
     "news": {
       "0.1.0": {
-        "en": "Initial release",
-        "de": "Erste Version"
+        "en": "Initial release: live images for VIS-2 and SIP door intercom with two-way audio",
+        "de": "Erste Version: Livebilder für VIS-2 und SIP-Türsprechstelle mit Gegensprechen"
       }
     },
     "titleLang": {
@@ -13,8 +13,8 @@
       "de": "Kamera-Livebilder"
     },
     "desc": {
-      "en": "Robust MJPEG live images from RTSP, ONVIF and HTTP cameras for VIS-2, with automatic reconnect",
-      "de": "Robuste MJPEG-Livebilder von RTSP-, ONVIF- und HTTP-Kameras für VIS-2, mit automatischem Neuverbinden"
+      "en": "Robust MJPEG live images from RTSP, ONVIF and HTTP cameras for VIS-2, with automatic reconnect and SIP door intercom (2N) with two-way audio in the browser",
+      "de": "Robuste MJPEG-Livebilder von RTSP-, ONVIF- und HTTP-Kameras für VIS-2, mit automatischem Neuverbinden und SIP-Türsprechstelle (2N) mit Gegensprechen im Browser"
     },
     "authors": [
       "andreaslampl"
@@ -50,11 +50,23 @@
     "publicHost": "",
     "accessKey": "",
     "ffmpegPath": "ffmpeg",
-    "cameras": []
+    "cameras": [],
+    "intercomEnabled": false,
+    "sipPort": 5060,
+    "intercomHost": "",
+    "intercomCamera": "",
+    "ringTimeout": 60,
+    "doorMethod": "dtmf",
+    "doorCode": "",
+    "doorSwitch": 1,
+    "intercomUser": "",
+    "intercomPassword": ""
   },
   "protectedNative": [
     "cameras",
-    "accessKey"
+    "accessKey",
+    "intercomPassword",
+    "doorCode"
   ],
   "objects": [],
   "instanceObjects": [
@@ -92,6 +104,146 @@
         }
       },
       "native": {}
+    },
+    {
+      "_id": "info.viewUrl",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Camera wall URL (for VIS-2)",
+          "de": "Kamerawand-URL (für VIS-2)"
+        },
+        "type": "string",
+        "role": "url",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "intercom",
+      "type": "channel",
+      "common": {
+        "name": {
+          "en": "Intercom",
+          "de": "Türsprechstelle"
+        }
+      },
+      "native": {}
+    },
+    {
+      "_id": "intercom.state",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Call state",
+          "de": "Anrufstatus"
+        },
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": false,
+        "states": {
+          "idle": "idle",
+          "ringing": "ringing",
+          "connecting": "connecting",
+          "active": "active"
+        }
+      },
+      "native": {}
+    },
+    {
+      "_id": "intercom.ringing",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Ringing",
+          "de": "Es klingelt"
+        },
+        "type": "boolean",
+        "role": "indicator",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "intercom.active",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Call active",
+          "de": "Gespräch läuft"
+        },
+        "type": "boolean",
+        "role": "indicator",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "intercom.caller",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Caller",
+          "de": "Anrufer"
+        },
+        "type": "string",
+        "role": "text",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "intercom.lastRing",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Last ring",
+          "de": "Zuletzt geklingelt"
+        },
+        "type": "string",
+        "role": "date",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "intercom.openDoor",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Open door",
+          "de": "Tür öffnen"
+        },
+        "type": "boolean",
+        "role": "button",
+        "read": false,
+        "write": true
+      },
+      "native": {}
+    },
+    {
+      "_id": "intercom.hangup",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Hang up / reject",
+          "de": "Auflegen / ablehnen"
+        },
+        "type": "boolean",
+        "role": "button",
+        "read": false,
+        "write": true
+      },
+      "native": {}
     }
+  ],
+  "encryptedNative": [
+    "intercomPassword"
   ]
 }
