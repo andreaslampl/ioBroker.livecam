@@ -85,8 +85,8 @@ Bitte im Handbuch der Kamera prüfen, sie unterscheiden sich je nach Modell und 
 Eine Übersicht aller Kameras gibt es unter `http://<ioBroker-IP>:8095/`.
 
 **Viele Kameras auf einer Seite:** Browser öffnen pro Server höchstens ca. 6 Livebilder
-gleichzeitig. Für mehr Kameras auf einer Seite die **snapshotUrl** mit einem
-Aktualisierungsintervall (z. B. 1 s) verwenden.
+gleichzeitig. Für mehr Kameras die **Kamerawand** (`/view`, schaltet automatisch um) oder die
+**snapshotUrl** mit einem Aktualisierungsintervall (z. B. 1 s) verwenden.
 
 ## Kamerawand mit Türsprechstelle (2N)
 
@@ -96,7 +96,26 @@ Klingelton und den Knöpfen **Abnehmen / Ablehnen / Auflegen / Tür öffnen**. G
 Mikrofon und Lautsprecher des Geräts, auf dem die Seite läuft. Klingelt es an mehreren
 Bildschirmen, nimmt der ab, der zuerst drückt; die anderen zeigen „Gespräch an einem anderen Gerät“.
 
-Nur bestimmte Kameras anzeigen: `…/view?cams=haustuer,garten,einfahrt,garage`
+### Layout anpassen
+
+Die Kamerawand lässt sich über Zusätze an der Adresse einstellen, beliebig kombinierbar mit `&`:
+
+| Zusatz | Wirkung | Beispiel |
+| --- | --- | --- |
+| `cams=` | welche Kameras, in welcher Reihenfolge | `?cams=haustuer,garten,einfahrt` |
+| `cols=` | Anzahl Spalten (sonst automatisch) | `?cols=4` |
+| `big=` | eine Kamera doppelt so groß (2×2 Kacheln) | `?big=haustuer` |
+| `mode=` | `mjpeg` = Livebild, `jpg` = Einzelbilder | `?mode=jpg` |
+| `fps=` | Bilder pro Sekunde im Einzelbild-Modus (Standard 4) | `?fps=6` |
+
+Beispiel: 9 Kameras, Haustür groß, 4 Spalten:
+`http://10.0.0.5:8095/view?big=haustuer&cols=4`
+
+**Wie viele Kameras gehen?** Beliebig viele. Bis 4 Kameras laufen echte Livebilder. Ab 5 Kameras
+schaltet die Seite automatisch auf schnell aktualisierte Einzelbilder um, weil Browser pro Server
+höchstens 6 Livebild-Verbindungen gleichzeitig offen halten. Darüber blieben Kacheln schwarz,
+und der Browser würde sogar das Nachladen der Seite blockieren. Die Kamera-IDs (z. B. `haustuer`)
+stehen in den Objekten unter `livecam.0.cameras`.
 
 ### 1. Adapter (Reiter „Türsprechstelle“)
 

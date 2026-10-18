@@ -25,7 +25,9 @@ existing cameras adapter lost its images after a while and needed restarts.
   (RFC 4733) or 2N HTTP API `/api/switch/ctrl`.
 - `lib/view.js` – `/view` camera wall for the owner's Windows touch PC in VIS-2 (iframe in an
   HTML widget with `allow="microphone; autoplay"`); ring tone via Web Audio; reloads
-  images after adapter restarts (detected via the WebSocket).
+  images after adapter restarts (detected via the WebSocket). Layout via query params
+  `cams`, `cols`, `big`, `mode` (mjpeg|jpg), `fps`; above 4 cameras it polls `/cam/<id>.jpg?fresh=1`
+  because browsers allow only 6 connections per host (verified: forced MJPEG shows 6 of 9).
 - `test/` – `node --test`, uses real ffmpeg (`testsrc`) and fake cameras from `test/helpers.js`.
 
 ## Conventions
