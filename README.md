@@ -96,6 +96,27 @@ Klingelton und den Knöpfen **Abnehmen / Ablehnen / Auflegen / Tür öffnen**. G
 Mikrofon und Lautsprecher des Geräts, auf dem die Seite läuft. Klingelt es an mehreren
 Bildschirmen, nimmt der ab, der zuerst drückt; die anderen zeigen „Gespräch an einem anderen Gerät“.
 
+### Anrufliste und verpasste Anrufe
+
+Bei jedem Klingeln macht der Adapter ein **Foto** mit der Türkamera und merkt sich den Anruf
+(Standard: die letzten **20**, einstellbar unter *Türsprechstelle → Anrufe in der Anrufliste*).
+
+- **Verpasst** = niemand hat abgenommen (Klingeldauer abgelaufen oder Besucher hat aufgegeben)
+- **Abgelehnt** = jemand hat „Ablehnen“ gedrückt
+- **Angenommen** = mit Gesprächsdauer
+
+Gibt es ungesehene verpasste Anrufe, zeigt die Kamerawand oben links **„🔔 2 verpasst“**. Antippen
+öffnet die Liste mit Uhrzeit und Foto; **„Gesehen“** setzt den Hinweis zurück. Die Liste lässt sich
+auch ohne verpasste Anrufe öffnen: 1,5 Sekunden auf die Kamerawand drücken.
+
+Fotos und Liste liegen im Datenverzeichnis des Adapters und bleiben bei einem Neustart erhalten.
+
+### Wann geht die Ansicht zurück?
+
+Sobald der Anruf vorbei ist: nach **Ablehnen** oder **Auflegen**, wenn der Besucher bzw. die 2N
+abbricht, oder wenn niemand innerhalb der **Klingeldauer** (Standard 60 s) abnimmt. Wird an einem
+anderen Bildschirm abgenommen, bleibt die Türkamera groß, bis dort aufgelegt wird.
+
 ### Layout anpassen
 
 Die Kamerawand lässt sich über Zusätze an der Adresse einstellen, beliebig kombinierbar mit `&`:
@@ -184,6 +205,10 @@ den Ton. In einem normalen Heimnetz ohne Firewall auf dem Server ist nichts zu t
 | `intercom.active` | Gespräch läuft |
 | `intercom.state` | `idle` / `ringing` / `connecting` / `active` |
 | `intercom.caller`, `intercom.lastRing` | Anrufer, Zeitpunkt des letzten Klingelns |
+| `intercom.missedCount` | Anzahl ungesehener verpasster Anrufe (z. B. für Telegram oder eine Anzeige) |
+| `intercom.lastMissed` | Zeitpunkt des letzten verpassten Anrufs |
+| `intercom.history` | Anrufliste als JSON |
+| `intercom.missedSeen` | **Knopf:** verpasste Anrufe als gesehen markieren |
 | `intercom.openDoor` | **Knopf:** Tür öffnen (HTTP-API jederzeit, Tastencode nur im Gespräch) |
 | `intercom.hangup` | **Knopf:** auflegen bzw. ablehnen |
 

@@ -1,11 +1,13 @@
 'use strict';
 
 const os = require('node:os');
+const path = require('node:path');
 const utils = require('@iobroker/adapter-core');
 const { CameraSource } = require('./lib/source');
 const { CamServer } = require('./lib/server');
 const { cameraId } = require('./lib/util');
 const { Intercom } = require('./lib/intercom');
+const { CallHistory } = require('./lib/history');
 
 function localAddress() {
     for (const list of Object.values(os.networkInterfaces())) {
@@ -84,7 +86,14 @@ class Livecam extends utils.Adapter {
 
         const intercomCamera = await this.startIntercom(used);
 
-        this.server = new CamServer({ sources: this.sources, accessKey: key, log: this.log, intercom: this.intercom, intercomCamera });
+        this.server = new CamServer({
+            sources: this.sources,
+            accessKey: key,
+            log: this.log,
+            intercom: this.intercom,
+            intercomCamera,
+            history: this.history,
+        });
         try {
             await this.server.listen(port);
         } catch (err) {
@@ -128,7 +137,30 @@ class Livecam extends utils.Adapter {
                 this.setState('intercom.caller', caller, true);
             }
         });
-        this.intercom.on('ring', () => this.setState('intercom.lastRing', new Date().toISOString(), true));
+        this.history = new CallHistory({
+            dir: path.join(this.dataDir || utils.getAbsoluteInstanceDataDir(this), 'calls'),
+            size: Number(c.historySize) || 20,
+            log: this.log,
+        });
+        this.history.load();
+        let ringPhoto = null;
+        this.intercom.on('ring', () => {
+            this.setState('intercom.lastRing', new Date().toISOString(), true);
+            // Photo of the visitor for the call history.
+            const source = this.sources.get(camera);
+            ringPhoto = source ? source.getFrame(1500, 8000).catch(() => null) : Promise.resolve(null);
+        });
+        this.intercom.on('callEnd', async entry => {
+            const image = ringPhoto ? await ringPhoto : null;
+            ringPhoto = null;
+            this.history.add(entry, image);
+            this.log.info(`Intercom: call ${entry.result}${entry.duration ? ` (${entry.duration} s)` : ''}`);
+            await this.publishHistory();
+        });
+        this.intercom.on('seen', () => {
+            this.history.markSeen();
+            this.publishHistory();
+        });
         try {
             const port = await this.intercom.start();
             this.log.info(`Intercom: listening for SIP calls on UDP port ${port}${c.intercomHost ? ` from ${c.intercomHost}` : ''}`);
@@ -142,7 +174,17 @@ class Livecam extends utils.Adapter {
         await this.setState('intercom.active', false, true);
         this.subscribeStates('intercom.openDoor');
         this.subscribeStates('intercom.hangup');
+        this.subscribeStates('intercom.missedSeen');
+        await this.publishHistory();
         return camera;
+    }
+
+    async publishHistory() {
+        const h = this.history;
+        this.intercom.setMissed(h.missedCount);
+        await this.setState('intercom.missedCount', h.missedCount, true);
+        await this.setState('intercom.lastMissed', h.lastMissed, true);
+        await this.setState('intercom.history', JSON.stringify(h.entries), true);
     }
 
     async onStateChange(id, state) {
@@ -155,6 +197,9 @@ class Livecam extends utils.Adapter {
                 await this.intercom.openDoor();
             } else if (local === 'intercom.hangup') {
                 this.intercom.hangup();
+            } else if (local === 'intercom.missedSeen') {
+                this.history.markSeen();
+                await this.publishHistory();
             }
         } catch (err) {
             this.log.warn(`Intercom: ${err.message}`);

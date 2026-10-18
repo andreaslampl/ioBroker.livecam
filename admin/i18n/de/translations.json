@@ -38,5 +38,6 @@
   "Switch code configured in the intercom, e.g. 00*": "In der Türsprechstelle eingestellter Schaltcode, z. B. 00*",
   "Switch number": "Schalter-Nummer",
   "HTTP API user": "HTTP-API-Benutzer",
-  "HTTP API password": "HTTP-API-Passwort"
+  "HTTP API password": "HTTP-API-Passwort",
+  "Calls in the history": "Anrufe in der Anrufliste"
 }

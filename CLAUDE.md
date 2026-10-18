@@ -28,6 +28,9 @@ existing cameras adapter lost its images after a while and needed restarts.
   images after adapter restarts (detected via the WebSocket). Layout via query params
   `cams`, `cols`, `big`, `mode` (mjpeg|jpg), `fps`; above 4 cameras it polls `/cam/<id>.jpg?fresh=1`
   because browsers allow only 6 connections per host (verified: forced MJPEG shows 6 of 9).
+- `lib/history.js` – `CallHistory`: last N calls (answered / missed / rejected) with a photo
+  from the intercom camera taken on ring; `history.json` + JPEGs in the instance data dir
+  (`calls/`). Served at `/history` and `/history/<id>.jpg`; missed badge on the camera wall.
 - `test/` – `node --test`, uses real ffmpeg (`testsrc`) and fake cameras from `test/helpers.js`.
 
 ## Conventions

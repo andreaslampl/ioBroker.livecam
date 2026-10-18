@@ -4,8 +4,8 @@
     "version": "0.1.0",
     "news": {
       "0.1.0": {
-        "en": "Initial release: live images for VIS-2 and SIP door intercom with two-way audio",
-        "de": "Erste Version: Livebilder für VIS-2 und SIP-Türsprechstelle mit Gegensprechen"
+        "en": "Initial release: live images for VIS-2, SIP door intercom with two-way audio and call history",
+        "de": "Erste Version: Livebilder für VIS-2, SIP-Türsprechstelle mit Gegensprechen und Anrufliste"
       }
     },
     "titleLang": {
@@ -60,7 +60,8 @@
     "doorCode": "",
     "doorSwitch": 1,
     "intercomUser": "",
-    "intercomPassword": ""
+    "intercomPassword": "",
+    "historySize": 20
   },
   "protectedNative": [
     "cameras",
@@ -234,6 +235,67 @@
         "name": {
           "en": "Hang up / reject",
           "de": "Auflegen / ablehnen"
+        },
+        "type": "boolean",
+        "role": "button",
+        "read": false,
+        "write": true
+      },
+      "native": {}
+    },
+    {
+      "_id": "intercom.missedCount",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Missed calls (unseen)",
+          "de": "Verpasste Anrufe (ungesehen)"
+        },
+        "type": "number",
+        "role": "value",
+        "read": true,
+        "write": false,
+        "def": 0
+      },
+      "native": {}
+    },
+    {
+      "_id": "intercom.lastMissed",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Last missed call",
+          "de": "Letzter verpasster Anruf"
+        },
+        "type": "string",
+        "role": "date",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "intercom.history",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Call history (JSON)",
+          "de": "Anrufliste (JSON)"
+        },
+        "type": "string",
+        "role": "json",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "intercom.missedSeen",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Mark missed calls as seen",
+          "de": "Verpasste Anrufe als gesehen markieren"
         },
         "type": "boolean",
         "role": "button",

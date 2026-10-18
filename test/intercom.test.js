@@ -138,6 +138,8 @@ async function fakeBrowser(port) {
 async function setup(t, door = { method: 'dtmf', code: '12*' }) {
     const intercom = new Intercom({ sipPort: 0, intercomHost: '127.0.0.1', camera: 'haustuer', door, log: quietLog });
     const sipPort = await intercom.start();
+    intercom.results = [];
+    intercom.on('callEnd', e => intercom.results.push(e));
     const server = http.createServer();
     intercom.attach(server);
     await new Promise(r => server.listen(0, '127.0.0.1', r));
@@ -199,6 +201,9 @@ test('call: ring, answer in the browser, audio both ways, door code, hang up', a
     await until(() => n.requests.some(r => r.method === 'BYE'));
     await until(() => b1.state.state === 'idle' && b2.state.state === 'idle');
     assert.equal(intercom.state, 'idle');
+    assert.equal(intercom.results.length, 1);
+    assert.equal(intercom.results[0].result, 'answered');
+    assert.equal(intercom.results[0].caller, 'Haustuer');
 });
 
 test('intercom cancels while ringing; caller hangs up during the call', async t => {
@@ -227,10 +232,19 @@ test('intercom cancels while ringing; caller hangs up during the call', async t 
     n.bye();
     await until(() => b.state.state === 'idle');
     assert.equal(intercom.state, 'idle');
+    assert.deepEqual(intercom.results.map(r => r.result), ['missed', 'answered']);
+
+    // Missed count is pushed to the camera wall; 'seen' is reported back.
+    intercom.setMissed(2);
+    await until(() => b.state.missed === 2);
+    let seen = false;
+    intercom.once('seen', () => (seen = true));
+    b.send({ type: 'seen' });
+    await until(() => seen);
 });
 
 test('reject while ringing sends 603', async t => {
-    const { sipPort, port } = await setup(t);
+    const { intercom, sipPort, port } = await setup(t);
     const n = await fake2N(sipPort);
     t.after(() => n.close());
     const b = await fakeBrowser(port);
@@ -240,6 +254,20 @@ test('reject while ringing sends 603', async t => {
     b.send({ type: 'hangup' });
     await until(() => n.responses.some(r => r.status === 603));
     await until(() => b.state.state === 'idle');
+    assert.deepEqual(intercom.results.map(r => r.result), ['rejected']);
+});
+
+test('unanswered call times out as missed', async t => {
+    const intercom = new Intercom({ sipPort: 0, intercomHost: '127.0.0.1', ringTimeout: 1, log: quietLog });
+    const sipPort = await intercom.start();
+    t.after(() => intercom.stop());
+    const results = [];
+    intercom.on('callEnd', e => results.push(e.result));
+    const n = await fake2N(sipPort);
+    t.after(() => n.close());
+    n.invite();
+    await until(() => n.responses.some(r => r.status === 480), 5000);
+    assert.deepEqual(results, ['missed']);
 });
 
 test('door via 2N HTTP API with digest login', async t => {
