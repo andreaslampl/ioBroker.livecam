@@ -1,0 +1,97 @@
+{
+  "common": {
+    "name": "livecam",
+    "version": "0.1.0",
+    "news": {
+      "0.1.0": {
+        "en": "Initial release",
+        "de": "Erste Version"
+      }
+    },
+    "titleLang": {
+      "en": "Live camera images",
+      "de": "Kamera-Livebilder"
+    },
+    "desc": {
+      "en": "Robust MJPEG live images from RTSP, ONVIF and HTTP cameras for VIS-2, with automatic reconnect",
+      "de": "Robuste MJPEG-Livebilder von RTSP-, ONVIF- und HTTP-Kameras für VIS-2, mit automatischem Neuverbinden"
+    },
+    "authors": [
+      "andreaslampl"
+    ],
+    "license": "MIT",
+    "platform": "Javascript/Node.js",
+    "mode": "daemon",
+    "icon": "livecam.png",
+    "extIcon": "https://raw.githubusercontent.com/andreaslampl/ioBroker.livecam/main/admin/livecam.png",
+    "readme": "https://github.com/andreaslampl/ioBroker.livecam/blob/main/README.md",
+    "enabled": true,
+    "type": "multimedia",
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "poll",
+    "adminUI": {
+      "config": "json"
+    },
+    "tier": 2,
+    "dependencies": [
+      {
+        "js-controller": ">=5.0.19"
+      }
+    ],
+    "globalDependencies": [
+      {
+        "admin": ">=6.0.0"
+      }
+    ]
+  },
+  "native": {
+    "port": 8095,
+    "publicHost": "",
+    "accessKey": "",
+    "ffmpegPath": "ffmpeg",
+    "cameras": []
+  },
+  "protectedNative": [
+    "cameras",
+    "accessKey"
+  ],
+  "objects": [],
+  "instanceObjects": [
+    {
+      "_id": "info",
+      "type": "channel",
+      "common": {
+        "name": "Information"
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.connection",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Web server running",
+          "de": "Webserver läuft"
+        },
+        "type": "boolean",
+        "role": "indicator.connected",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "cameras",
+      "type": "folder",
+      "common": {
+        "name": {
+          "en": "Cameras",
+          "de": "Kameras"
+        }
+      },
+      "native": {}
+    }
+  ]
+}

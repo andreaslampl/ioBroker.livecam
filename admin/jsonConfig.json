@@ -1,0 +1,169 @@
+{
+  "i18n": true,
+  "type": "tabs",
+  "items": {
+    "tabCameras": {
+      "type": "panel",
+      "label": "Cameras",
+      "items": {
+        "camHelp": {
+          "type": "staticText",
+          "text": "Type ONVIF: enter the IP address, the stream is found automatically. Type Stream: RTSP or HTTP-MJPEG URL. Type Snapshot: URL of a single JPEG image. Profile 0 = main stream, 1 = usually a lighter sub stream (recommended).",
+          "xs": 12
+        },
+        "cameras": {
+          "type": "table",
+          "xs": 12,
+          "newLine": true,
+          "items": [
+            {
+              "type": "checkbox",
+              "attr": "enabled",
+              "title": "Active",
+              "width": "5%",
+              "default": true
+            },
+            {
+              "type": "text",
+              "attr": "name",
+              "title": "Name",
+              "width": "12%",
+              "validator": "!!data.name",
+              "default": ""
+            },
+            {
+              "type": "select",
+              "attr": "type",
+              "title": "Type",
+              "width": "10%",
+              "default": "onvif",
+              "options": [
+                {
+                  "label": "ONVIF",
+                  "value": "onvif"
+                },
+                {
+                  "label": "Stream (RTSP/HTTP)",
+                  "value": "stream"
+                },
+                {
+                  "label": "Snapshot (JPEG)",
+                  "value": "snapshot"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "attr": "host",
+              "title": "IP (ONVIF)",
+              "width": "10%",
+              "default": ""
+            },
+            {
+              "type": "number",
+              "attr": "onvifPort",
+              "title": "ONVIF port",
+              "width": "6%",
+              "default": 80
+            },
+            {
+              "type": "number",
+              "attr": "profile",
+              "title": "Profile",
+              "width": "5%",
+              "default": 1,
+              "min": 0
+            },
+            {
+              "type": "text",
+              "attr": "url",
+              "title": "URL (Stream/Snapshot)",
+              "width": "18%",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "user",
+              "title": "User",
+              "width": "8%",
+              "default": ""
+            },
+            {
+              "type": "password",
+              "attr": "password",
+              "title": "Password",
+              "width": "8%",
+              "default": ""
+            },
+            {
+              "type": "number",
+              "attr": "fps",
+              "title": "FPS",
+              "width": "5%",
+              "default": 5,
+              "min": 0.2,
+              "max": 25
+            },
+            {
+              "type": "number",
+              "attr": "width",
+              "title": "Width (px)",
+              "width": "6%",
+              "default": 1280,
+              "min": 0
+            },
+            {
+              "type": "checkbox",
+              "attr": "keepAlive",
+              "title": "Always on",
+              "width": "5%",
+              "default": false
+            }
+          ]
+        }
+      }
+    },
+    "tabServer": {
+      "type": "panel",
+      "label": "Web server",
+      "items": {
+        "port": {
+          "type": "number",
+          "label": "Port",
+          "default": 8095,
+          "min": 1,
+          "max": 65535,
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        },
+        "publicHost": {
+          "type": "text",
+          "label": "Address for the URLs (empty = automatic)",
+          "help": "IP or host name of the ioBroker server as seen from the VIS-2 browser",
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        },
+        "accessKey": {
+          "type": "password",
+          "label": "Access key (optional)",
+          "help": "If set, URLs only work with ?key=… (it is added to the URLs automatically)",
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        },
+        "ffmpegPath": {
+          "type": "text",
+          "label": "ffmpeg path",
+          "default": "ffmpeg",
+          "help": "Install on the ioBroker server: sudo apt install ffmpeg",
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        }
+      }
+    }
+  }
+}

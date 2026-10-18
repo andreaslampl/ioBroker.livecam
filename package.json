@@ -1,0 +1,27 @@
+{
+  "name": "iobroker.livecam",
+  "version": "0.1.0",
+  "description": "Robust live images (MJPEG) from RTSP, ONVIF and HTTP cameras for ioBroker VIS-2",
+  "author": "andreaslampl",
+  "license": "MIT",
+  "homepage": "https://github.com/andreaslampl/ioBroker.livecam",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andreaslampl/ioBroker.livecam.git"
+  },
+  "bugs": {
+    "url": "https://github.com/andreaslampl/ioBroker.livecam/issues"
+  },
+  "keywords": ["ioBroker", "camera", "Kamera", "RTSP", "ONVIF", "MJPEG", "VIS-2", "Axis", "Hanwha", "Mobotix", "2N"],
+  "main": "main.js",
+  "files": ["admin/", "lib/", "main.js", "io-package.json", "LICENSE", "README.md"],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@iobroker/adapter-core": "^3.2.3"
+  },
+  "scripts": {
+    "test": "node --test --test-timeout=60000 test/*.test.js"
+  }
+}
