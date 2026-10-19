@@ -100,7 +100,7 @@ async function fakeBrowser(port) {
         }
     });
     await opened;
-    b.answer = async () => {
+    b.answer = async (direction = 'sendrecv') => {
         b.pc = new werift.RTCPeerConnection({
             codecs: {
                 audio: [
@@ -111,7 +111,7 @@ async function fakeBrowser(port) {
             },
         });
         b.mic = new werift.MediaStreamTrack({ kind: 'audio' });
-        b.pc.addTransceiver(b.mic, { direction: 'sendrecv' });
+        b.pc.addTransceiver(b.mic, { direction });
         b.pc.onTrack.subscribe(t => t.onReceiveRtp.subscribe(() => b.received++));
         await b.pc.setLocalDescription(await b.pc.createOffer());
         await until(() => b.pc.iceGatheringState === 'complete', 5000).catch(() => {});
@@ -204,6 +204,31 @@ test('call: ring, answer in the browser, audio both ways, door code, hang up', a
     assert.equal(intercom.results.length, 1);
     assert.equal(intercom.results[0].result, 'answered');
     assert.equal(intercom.results[0].caller, 'Haustuer');
+});
+
+test('answer without microphone: listen only, door still works', async t => {
+    const { intercom, sipPort, port } = await setup(t);
+    const n = await fake2N(sipPort);
+    t.after(() => n.close());
+    const b = await fakeBrowser(port);
+    t.after(() => b.close());
+    await until(() => b.state);
+    n.invite();
+    await until(() => b.state.state === 'ringing');
+    await b.answer('recvonly');
+    await until(() => n.responses.some(r => r.status === 200));
+    const ok = n.responses.find(r => r.status === 200);
+    n.toTag = /tag=([^;\s]+)/.exec(ok.header('to'))[1];
+    n.ack();
+    await until(() => b.state.state === 'active');
+    await until(() => b.pc.connectionState === 'connected', 10000);
+    n.sendAudio(30, Number(/m=audio (\d+)/.exec(ok.body)[1]));
+    await until(() => b.received >= 20, 10000);
+    b.send({ type: 'door' });
+    await until(() => new Set(n.dtmf).size === 3, 10000);
+    b.send({ type: 'hangup' });
+    await until(() => intercom.state === 'idle');
+    assert.equal(intercom.results[0].result, 'answered');
 });
 
 test('intercom cancels while ringing; caller hangs up during the call', async t => {

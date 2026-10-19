@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "news": {
+      "0.1.8": {
+        "en": "Answering works without a microphone (listen only, door opener still works)",
+        "de": "Abnehmen geht auch ohne Mikrofon (nur Zuhören, Tür öffnen funktioniert)"
+      },
       "0.1.7": {
         "en": "Selectable ring tone and volume; answering shows what is happening and why it fails; intercom camera is found by its IP if the name does not match",
         "de": "Klingelton und Lautstärke wählbar; beim Abnehmen wird angezeigt, was passiert und warum es nicht klappt; die Kamera der Türsprechstelle wird über die IP gefunden, wenn der Name nicht passt"
