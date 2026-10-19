@@ -82,6 +82,8 @@ Bitte im Handbuch der Kamera prüfen, sie unterscheiden sich je nach Modell und 
 
 ## In VIS-2 anzeigen
 
+Kurzfassung zum Ausdrucken: [ANLEITUNG-VIS.md](ANLEITUNG-VIS.md)
+
 1. Nach dem Start stehen unter `livecam.0.cameras.<name>.mjpegUrl` die fertigen Adressen,
    z. B. `http://10.0.0.5:8095/cam/haustuer.mjpeg`.
 2. In VIS-2 ein **Bild-Widget** (z. B. *Basic → Image*) einfügen.
