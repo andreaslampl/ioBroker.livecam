@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.1.8",
+    "version": "0.1.9",
     "news": {
+      "0.1.9": {
+        "en": "Camera wall and single cameras can be switched on/off from ioBroker (view.display, cameras.<id>.show); ringing and a tap still show it",
+        "de": "Kamerawand und einzelne Kameras aus ioBroker ein- und ausschaltbar (view.display, cameras.<id>.show); Klingeln und Antippen zeigen sie trotzdem"
+      },
       "0.1.8": {
         "en": "Answering works without a microphone (listen only, door opener still works)",
         "de": "Abnehmen geht auch ohne Mikrofon (nur Zuhören, Tür öffnen funktioniert)"

@@ -35,6 +35,10 @@ existing cameras adapter lost its images after a while and needed restarts.
   The overview page `/` polls single images too. Ring tones (dingdong, gong, chime, bell, phone,
   custom URL) and volume come from the settings (`?tone=`/`?volume=` override, `?testring=1`
   shows a test button). The intercom camera falls back to the camera with the intercom's IP.
+  On/off from ioBroker (`view.display`, `cameras.<id>.show`, persisted, pushed as `{type:'view'}`
+  over `/ws`): off = black, tiles removed so connections close; ring shows the intercom camera,
+  a tap wakes the wall for `?wake=` s (default 120). Asked for because the owner's touch monitor
+  draws too much power for its supply and switches off after a while.
 - `lib/history.js` – `CallHistory`: last N calls (answered / missed / rejected) with a photo
   from the intercom camera taken on ring; `history.json` + JPEGs in the instance data dir
   (`calls/`). Served at `/history` and `/history/<id>.jpg`; missed badge on the camera wall.

@@ -21,6 +21,10 @@ class FakeAdapter extends EventEmitter {
     async setState(id, val, ack) {
         this.states[id] = { val, ack };
     }
+    async getStateAsync(id) {
+        return this.states[id] || null;
+    }
+    subscribeStates() {}
     async extendObject(id, obj) {
         this.objects[id] = obj;
     }
@@ -164,4 +168,60 @@ test('adapter: intercom camera found by the intercom IP when the name does not m
     t.after(() => new Promise(resolve => adapter.emit('unload', resolve)));
     assert.equal(adapter.server.intercomCamera, 'sprechanalge');
     assert.match(warnings.join('\n'), /"Sprechanlage" not found.*using "Sprechanalge"/);
+});
+
+test('adapter: camera wall and single cameras switched on/off from ioBroker', async t => {
+    const WebSocket = require('ws');
+    const port = 40000 + Math.floor(Math.random() * 10000);
+    const adapter = require('../main.js')({
+        config: {
+            port,
+            publicHost: '127.0.0.1',
+            cameras: [
+                { enabled: true, name: 'Carport', type: 'stream', url: 'rtsp://172.10.10.111/axis-media/media.amp' },
+                { enabled: true, name: 'Garten', type: 'stream', url: 'rtsp://172.10.10.112/axis-media/media.amp' },
+            ],
+        },
+    });
+    // Left switched off before the restart: stays off.
+    adapter.states['cameras.garten.show'] = { val: false, ack: true };
+    adapter.emit('ready');
+    const s = adapter.states;
+    await until(() => s['info.connection'] && s['info.connection'].val === true);
+    t.after(() => new Promise(resolve => adapter.emit('unload', resolve)));
+    assert.equal(s['view.display'].val, true);
+    assert.equal(s['cameras.carport.show'].val, true);
+    assert.equal(adapter.objects['view.display'].common.write, true);
+
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    const views = [];
+    ws.on('message', d => {
+        const msg = JSON.parse(d.toString());
+        if (msg.type === 'view') {
+            views.push(msg);
+        }
+    });
+    t.after(() => ws.close());
+    await until(() => views.length === 1);
+    assert.deepEqual(views[0], { type: 'view', display: true, hidden: ['garten'] });
+
+    await adapter.onStateChange(`${adapter.namespace}.view.display`, { val: false, ack: false });
+    await until(() => views.length === 2);
+    assert.deepEqual(views[1], { type: 'view', display: false, hidden: ['garten'] });
+    assert.deepEqual(s['view.display'], { val: false, ack: true });
+
+    await adapter.onStateChange(`${adapter.namespace}.cameras.garten.show`, { val: true, ack: false });
+    await adapter.onStateChange(`${adapter.namespace}.cameras.carport.show`, { val: false, ack: false });
+    await until(() => views.length === 4);
+    assert.deepEqual(views[3].hidden, ['carport']);
+
+    // The page itself starts with the current switch positions.
+    const html = await new Promise((resolve, reject) =>
+        http.get(`http://127.0.0.1:${port}/view`, r => {
+            let b = '';
+            r.on('data', d => (b += d));
+            r.on('end', () => resolve(b));
+        }).on('error', reject),
+    );
+    assert.match(html, /"view":\{"display":false,"hidden":\["carport"\]\}/);
 });

@@ -123,6 +123,21 @@ Sobald der Anruf vorbei ist: nach **Ablehnen** oder **Auflegen**, wenn der Besuc
 abbricht, oder wenn niemand innerhalb der **Klingeldauer** (Standard 60 s) abnimmt. Wird an einem
 anderen Bildschirm abgenommen, bleibt die Türkamera groß, bis dort aufgelegt wird.
 
+### Kamerawand ein- und ausschalten
+
+Unter `livecam.0.view.display` lässt sich die ganze Kamerawand aus- und einschalten, z. B. per
+Skript, Szene, Zeitplan oder Bewegungsmelder:
+
+- **aus:** der Bildschirm bleibt schwarz und es werden keine Bilder geladen; die Kameras werden
+  nach 15 s nicht mehr abgefragt (spart Netzwerk und Rechenleistung).
+- **Klingeln** schaltet trotzdem die Türkamera groß ein, nach dem Anruf wird es wieder schwarz.
+- **Antippen** des schwarzen Bildschirms zeigt die Kameras für 2 Minuten (`?wake=60` = 60 s).
+
+Einzelne Kameras blendet `livecam.0.cameras.<name>.show` aus (aus = nicht auf der Kamerawand,
+die anderen Kacheln werden größer). Die Schalter bleiben auch nach einem Neustart so, wie sie
+waren. Den Monitor selbst kann eine Webseite nicht ausschalten; er wird aber dunkel und
+der Browser hat weniger zu tun.
+
 ### Layout anpassen
 
 Die Kamerawand lässt sich über Zusätze an der Adresse einstellen, beliebig kombinierbar mit `&`:
@@ -134,6 +149,7 @@ Die Kamerawand lässt sich über Zusätze an der Adresse einstellen, beliebig ko
 | `big=` | eine Kamera doppelt so groß (2×2 Kacheln) | `?big=haustuer` |
 | `mode=` | `mjpeg` = Livebild, `jpg` = Einzelbilder | `?mode=jpg` |
 | `fps=` | Bilder pro Sekunde im Einzelbild-Modus (Standard 4) | `?fps=6` |
+| `wake=` | Sekunden, die Antippen eine ausgeschaltete Kamerawand zeigt (Standard 120) | `?wake=60` |
 
 Beispiel: 9 Kameras, Haustür groß, 4 Spalten:
 `http://10.0.0.5:8095/view?big=haustuer&cols=4`
@@ -208,7 +224,9 @@ den Ton. In einem normalen Heimnetz ohne Firewall auf dem Server ist nichts zu t
 | `cameras.<name>.fps` | tatsächliche Bilder pro Sekunde |
 | `cameras.<name>.viewers` | aktuelle Zuschauer |
 | `cameras.<name>.lastError` | letzter Fehler (leer = alles ok) |
+| `cameras.<name>.show` | **Schalter:** Kamera auf der Kamerawand anzeigen |
 | `info.viewUrl` | Adresse der Kamerawand für VIS-2 |
+| `view.display` | **Schalter:** Kamerawand an (aus = schwarz, beim Klingeln trotzdem an) |
 | `intercom.ringing` | es klingelt (z. B. für Licht, Telegram, Durchsage) |
 | `intercom.active` | Gespräch läuft |
 | `intercom.state` | `idle` / `ringing` / `connecting` / `active` |

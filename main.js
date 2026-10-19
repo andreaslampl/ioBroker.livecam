@@ -84,6 +84,7 @@ class Livecam extends utils.Adapter {
             source.on('status', status => this.onStatus(id, status));
         }
         await this.removeStaleCameras(used);
+        const view = await this.restoreView();
 
         const intercomCamera = await this.startIntercom(used);
 
@@ -100,6 +101,9 @@ class Livecam extends utils.Adapter {
                 ringVolume: Number(this.config.ringVolume) || 70,
             },
         });
+        this.server.setView(view);
+        this.subscribeStates('view.display');
+        this.subscribeStates('cameras.*.show');
         try {
             await this.server.listen(port);
         } catch (err) {
@@ -213,6 +217,38 @@ class Livecam extends utils.Adapter {
         return camera;
     }
 
+    /** Camera wall on/off and per-camera visibility as left before the restart (default: on). */
+    async restoreView() {
+        await this.extendObject('view', { type: 'channel', common: { name: { en: 'Camera wall', de: 'Kamerawand' } }, native: {} });
+        await this.extendObject('view.display', {
+            type: 'state',
+            common: {
+                name: { en: 'Camera wall on (off = black screen, shown anyway when the intercom rings)', de: 'Kamerawand an (aus = schwarzer Bildschirm, beim Klingeln trotzdem an)' },
+                type: 'boolean',
+                role: 'switch',
+                read: true,
+                write: true,
+                def: true,
+            },
+            native: {},
+        });
+        const value = async id => {
+            const st = await this.getStateAsync(id).catch(() => null);
+            return st && st.val !== null && st.val !== undefined ? Boolean(st.val) : true;
+        };
+        const display = await value('view.display');
+        await this.setState('view.display', display, true);
+        const hidden = [];
+        for (const id of this.sources.keys()) {
+            const show = await value(`cameras.${id}.show`);
+            await this.setState(`cameras.${id}.show`, show, true);
+            if (!show) {
+                hidden.push(id);
+            }
+        }
+        return { display, hidden };
+    }
+
     async publishHistory() {
         const h = this.history;
         this.intercom.setMissed(h.missedCount);
@@ -222,10 +258,29 @@ class Livecam extends utils.Adapter {
     }
 
     async onStateChange(id, state) {
-        if (!state || state.ack || !this.intercom) {
+        if (!state || state.ack) {
             return;
         }
         const local = id.slice(this.namespace.length + 1);
+        if (local === 'view.display' && this.server) {
+            this.server.setView({ display: Boolean(state.val) });
+            this.log.info(`Camera wall ${state.val ? 'on' : 'off'}`);
+            await this.setState(local, Boolean(state.val), true);
+            return;
+        }
+        const show = /^cameras\.([^.]+)\.show$/.exec(local);
+        if (show && this.server && this.sources.has(show[1])) {
+            const hidden = this.server.view.hidden.filter(h => h !== show[1]);
+            if (!state.val) {
+                hidden.push(show[1]);
+            }
+            this.server.setView({ hidden });
+            await this.setState(local, Boolean(state.val), true);
+            return;
+        }
+        if (!this.intercom) {
+            return;
+        }
         try {
             if (local === 'intercom.openDoor') {
                 await this.intercom.openDoor();
@@ -234,6 +289,8 @@ class Livecam extends utils.Adapter {
             } else if (local === 'intercom.missedSeen') {
                 this.history.markSeen();
                 await this.publishHistory();
+            } else {
+                return;
             }
         } catch (err) {
             this.log.warn(`Intercom: ${err.message}`);
@@ -308,6 +365,18 @@ class Livecam extends utils.Adapter {
                 native: {},
             });
         }
+        await this.extendObject(`cameras.${id}.show`, {
+            type: 'state',
+            common: {
+                name: { en: 'Show on the camera wall', de: 'Auf der Kamerawand anzeigen' },
+                type: 'boolean',
+                role: 'switch',
+                read: true,
+                write: true,
+                def: true,
+            },
+            native: {},
+        });
     }
 
     /** Delete objects of cameras that were removed or renamed in the settings. */
