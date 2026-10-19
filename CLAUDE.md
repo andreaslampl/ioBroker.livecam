@@ -45,10 +45,11 @@ existing cameras adapter lost its images after a while and needed restarts.
 - Install on the ioBroker host: `iobroker url https://github.com/andreaslampl/ioBroker.livecam`;
   ffmpeg must be installed there (`sudo apt install ffmpeg`).
 - Run `npm test` before committing.
-- Field test (0.1.4): two of the owner's cameras (Carport, Haustür) work as type Stream with
-  `rtsp://<ip>/axis-media/media.amp` (Axis path, cameras set to HTTPS only; RTSP on 554
-  unaffected). ONVIF, snapshot mode and the 2N intercom are not yet tested on real devices;
-  manufacturer URLs in the README are typical examples. Before this adapter the owner answered the 2N with MicroSIP
+- Field test (0.1.6): four cameras work, also in VIS-2 via `/view` in an HTML widget: three
+  as type Stream with `rtsp://<ip>/axis-media/media.amp` (cameras set to HTTPS only; RTSP on
+  554 unaffected) and the 2N IP Verso 2.0 camera via ONVIF. Snapshot mode and the SIP
+  intercom are not yet tested on real devices; manufacturer URLs in the README are typical
+  examples. Before this adapter the owner answered the 2N with MicroSIP
   (peer-to-peer SIP), which works - useful as a reference when debugging.
 - Browser mic needs a secure context: on the touch PC the http origins are whitelisted via
   `edge://flags/#unsafely-treat-insecure-origin-as-secure`.
