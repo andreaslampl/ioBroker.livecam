@@ -149,12 +149,12 @@ test('adapter: intercom camera found by the intercom IP when the name does not m
             port,
             publicHost: '127.0.0.1',
             cameras: [
-                { enabled: true, name: 'Carport', type: 'stream', url: 'rtsp://172.10.10.111/axis-media/media.amp' },
-                { enabled: true, name: 'Sprechanalge', type: 'onvif', host: '172.10.10.120' },
+                { enabled: true, name: 'Carport', type: 'stream', url: 'rtsp://192.168.1.111/axis-media/media.amp' },
+                { enabled: true, name: 'Sprechanalge', type: 'onvif', host: '192.168.1.120' },
             ],
             intercomEnabled: true,
             sipPort: 30000 + Math.floor(Math.random() * 10000),
-            intercomHost: '172.10.10.120',
+            intercomHost: '192.168.1.120',
             intercomCamera: 'Sprechanlage',
             doorMethod: 'none',
         },
@@ -178,8 +178,8 @@ test('adapter: camera wall and single cameras switched on/off from ioBroker', as
             port,
             publicHost: '127.0.0.1',
             cameras: [
-                { enabled: true, name: 'Carport', type: 'stream', url: 'rtsp://172.10.10.111/axis-media/media.amp' },
-                { enabled: true, name: 'Garten', type: 'stream', url: 'rtsp://172.10.10.112/axis-media/media.amp' },
+                { enabled: true, name: 'Carport', type: 'stream', url: 'rtsp://192.168.1.111/axis-media/media.amp' },
+                { enabled: true, name: 'Garten', type: 'stream', url: 'rtsp://192.168.1.112/axis-media/media.amp' },
             ],
         },
     });

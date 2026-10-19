@@ -1,14 +1,14 @@
 # Spickzettel: Kameras in VIS-2 einbinden
 
-Meine Adressen:
+Meine Adressen (`x.x.x.x` = IP des ioBroker-Servers, steht auch im Datenpunkt `livecam.0.info.viewUrl`):
 
 | Was | Adresse |
 | --- | --- |
-| ioBroker-Server | `172.20.10.203` |
-| Livecam (Kamerabilder) | `http://172.20.10.203:8095` |
-| VIS-2 | `http://172.20.10.203:8082` |
-| Kamerawand | `http://172.20.10.203:8095/view` |
-| Übersicht aller Kameras | `http://172.20.10.203:8095/` |
+| ioBroker-Server | `x.x.x.x` |
+| Livecam (Kamerabilder) | `http://x.x.x.x:8095` |
+| VIS-2 | `http://x.x.x.x:8082` |
+| Kamerawand | `http://x.x.x.x:8095/view` |
+| Übersicht aller Kameras | `http://x.x.x.x:8095/` |
 
 ---
 
@@ -21,7 +21,7 @@ Meine Adressen:
 4. Rechts im Feld **HTML** genau das hier einfügen:
 
 ```html
-<iframe src="http://172.20.10.203:8095/view" allow="microphone; autoplay"
+<iframe src="http://x.x.x.x:8095/view" allow="microphone; autoplay"
         style="width:100%;height:100%;border:0"></iframe>
 ```
 
@@ -47,7 +47,7 @@ Zusätze hinten an die Adresse hängen: der erste mit `?`, jeder weitere mit `&`
 Beispiel:
 
 ```html
-<iframe src="http://172.20.10.203:8095/view?big=sprechanalge&cols=3" allow="microphone; autoplay"
+<iframe src="http://x.x.x.x:8095/view?big=sprechanalge&cols=3" allow="microphone; autoplay"
         style="width:100%;height:100%;border:0"></iframe>
 ```
 
@@ -59,7 +59,7 @@ Die Kamera-Namen (z. B. `carport`) stehen in ioBroker unter **Objekte → liveca
 
 1. Widget **Image** (Gruppe *Basic*) auf die Seite ziehen.
 2. Als Bildquelle die Adresse aus dem Objekt `livecam.0.cameras.<name>.mjpegUrl` eintragen,
-   z. B. `http://172.20.10.203:8095/cam/carport.mjpeg`
+   z. B. `http://x.x.x.x:8095/cam/carport.mjpeg`
 3. **Kein Aktualisierungsintervall** setzen, das Bild läuft von selbst.
 
 > Mehr als 2 Livebilder auf einer Seite? Lieber die Kamerawand (Punkt 1) nehmen,
@@ -71,7 +71,7 @@ Die Kamera-Namen (z. B. `carport`) stehen in ioBroker unter **Objekte → liveca
 
 1. In die Adresszeile eingeben: `edge://flags/#unsafely-treat-insecure-origin-as-secure`
 2. Ins Feld eintragen:
-   `http://172.20.10.203:8095,http://172.20.10.203:8082`
+   `http://x.x.x.x:8095,http://x.x.x.x:8082`
 3. Auf **Aktiviert** stellen und unten auf **Neu starten** klicken.
 4. Klingelton ohne vorheriges Antippen erlauben: `edge://settings/content/mediaAutoplay`
    → **Zulassen** → beide Adressen hinzufügen.
@@ -96,7 +96,7 @@ Geht auch per Zeitplan, Skript oder Knopf in VIS (Widget mit diesem Datenpunkt v
 
 | Problem | Lösung |
 | --- | --- |
-| Kamerawand bleibt leer | Adresse direkt im Browser öffnen: `http://172.20.10.203:8095/view` |
+| Kamerawand bleibt leer | Adresse direkt im Browser öffnen: `http://x.x.x.x:8095/view` |
 | Neue Kamera fehlt in VIS | Seite neu laden (F5) |
 | Kachel bleibt schwarz | andere Tabs mit Kamerabildern schließen (Browser-Grenze) |
 | „Mikrofon nicht freigegeben“ | Punkt 3 prüfen, Edge wirklich neu starten |

@@ -32,8 +32,8 @@
         "de": "Kameras im Modus „nur HTTPS“: ONVIF über https (Port 443 oder automatisch), Weiterleitungen werden befolgt"
       },
       "0.1.2": {
-        "en": "The IP column may contain a port (e.g. 172.20.10.50:554)",
-        "de": "In der Spalte IP darf ein Port stehen (z. B. 172.20.10.50:554)"
+        "en": "The IP column may contain a port (e.g. 192.168.1.50:554)",
+        "de": "In der Spalte IP darf ein Port stehen (z. B. 192.168.1.50:554)"
       },
       "0.1.1": {
         "en": "A path alone (e.g. /axis-media/media.amp) is completed with the IP address; clear errors for wrong IP addresses and URLs",

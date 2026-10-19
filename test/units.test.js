@@ -68,17 +68,17 @@ test('HTTP basic login', async t => {
 });
 
 test('camera URLs are completed and IPs checked', () => {
-    assert.equal(completeUrl('stream', '/axis-media/media.amp', '172.20.10.50'), 'rtsp://172.20.10.50/axis-media/media.amp');
-    assert.equal(completeUrl('snapshot', '/axis-cgi/jpg/image.cgi', '172.20.10.50'), 'http://172.20.10.50/axis-cgi/jpg/image.cgi');
-    assert.equal(completeUrl('stream', '172.20.10.50/axis-media/media.amp', ''), 'rtsp://172.20.10.50/axis-media/media.amp');
+    assert.equal(completeUrl('stream', '/axis-media/media.amp', '192.168.1.50'), 'rtsp://192.168.1.50/axis-media/media.amp');
+    assert.equal(completeUrl('snapshot', '/axis-cgi/jpg/image.cgi', '192.168.1.50'), 'http://192.168.1.50/axis-cgi/jpg/image.cgi');
+    assert.equal(completeUrl('stream', '192.168.1.50/axis-media/media.amp', ''), 'rtsp://192.168.1.50/axis-media/media.amp');
     assert.equal(completeUrl('stream', 'rtsp://cam/x', '1.2.3.4'), 'rtsp://cam/x');
     assert.equal(completeUrl('stream', '/x', ''), '/x');
-    assert.equal(completeUrl('snapshot', '/axis-cgi/jpg/image.cgi', '172.20.10.50:443'), 'https://172.20.10.50:443/axis-cgi/jpg/image.cgi');
-    assert.equal(validHost('172.20.10.50'), true);
+    assert.equal(completeUrl('snapshot', '/axis-cgi/jpg/image.cgi', '192.168.1.50:443'), 'https://192.168.1.50:443/axis-cgi/jpg/image.cgi');
+    assert.equal(validHost('192.168.1.50'), true);
     assert.equal(validHost('17210.10.5'), false);
-    assert.equal(validHost('172.20.10.256'), false);
+    assert.equal(validHost('192.168.1.256'), false);
     assert.equal(validHost('axis-haustuer.local'), true);
-    assert.equal(validHost('172.20.10.50:554'), true);
-    assert.equal(validHost('172.20.10.50:99999'), false);
-    assert.equal(completeUrl('stream', '/axis-media/media.amp', '172.20.10.50:554'), 'rtsp://172.20.10.50:554/axis-media/media.amp');
+    assert.equal(validHost('192.168.1.50:554'), true);
+    assert.equal(validHost('192.168.1.50:99999'), false);
+    assert.equal(completeUrl('stream', '/axis-media/media.amp', '192.168.1.50:554'), 'rtsp://192.168.1.50:554/axis-media/media.amp');
 });

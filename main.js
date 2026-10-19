@@ -305,11 +305,11 @@ class Livecam extends utils.Adapter {
             if (!host) {
                 return 'ONVIF needs the IP address of the camera';
             }
-            return validHost(host) ? null : `IP address "${host}" looks wrong (example: 172.20.10.50)`;
+            return validHost(host) ? null : `IP address "${host}" looks wrong (example: 192.168.1.50)`;
         }
         // The IP column only matters when the URL is just a path.
         if (host && String(cam.url || '').trim().startsWith('/') && !validHost(host)) {
-            return `IP address "${host}" looks wrong (example: 172.20.10.50)`;
+            return `IP address "${host}" looks wrong (example: 192.168.1.50)`;
         }
         const url = completeUrl(type, cam.url, host);
         if (!url) {
@@ -327,7 +327,7 @@ class Livecam extends utils.Adapter {
         try {
             const h = new URL(url).hostname;
             if (/^[\d.]+$/.test(h) && !validHost(h)) {
-                return `IP address "${h}" in the URL looks wrong (example: 172.20.10.50)`;
+                return `IP address "${h}" in the URL looks wrong (example: 192.168.1.50)`;
             }
         } catch {
             return `URL "${url}" is not valid`;
