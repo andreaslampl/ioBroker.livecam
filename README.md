@@ -72,6 +72,10 @@ Bitte im Handbuch der Kamera prüfen, sie unterscheiden sich je nach Modell und 
 | **2N** | `rtsp://IP:554/h264_stream` | `http://IP/api/camera/snapshot?width=640&height=480` |
 
 **Hinweise:**
+- **Kameras auf „nur HTTPS“:** RTSP (Port 554) ist davon meist nicht betroffen. Snapshot- und
+  MJPEG-Adressen mit `https://` eintragen; selbst ausgestellte Kamera-Zertifikate werden akzeptiert.
+  Für ONVIF als Port **443** eintragen. Leitet die Kamera von http auf https weiter oder ist http
+  abgeschaltet, wechselt der Adapter auch bei Port 80 selbst auf https.
 - **Axis + ONVIF:** Axis verlangt einen **eigenen ONVIF-Benutzer** (in der Kamera unter
   *System → ONVIF* anlegen).
 - **2N:** Die HTTP-API und ein Benutzer mit Kamera-Recht müssen in der 2N-Weboberfläche aktiviert sein.

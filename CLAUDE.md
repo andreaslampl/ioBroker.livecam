@@ -12,9 +12,12 @@ existing cameras adapter lost its images after a while and needed restarts.
   15 s idle grace, watchdog (no frame for `stallTimeout` -> reconnect with backoff 2…60 s).
 - `lib/server.js` – `CamServer`: `/cam/<id>.mjpeg`, `/cam/<id>.jpg`, `/`; viewers share
   one source; slow viewers skip frames (no queueing); optional `?key=`.
-- `lib/http-client.js` – Basic + Digest (MD5, MD5-sess, SHA-256), challenge reuse.
+- `lib/http-client.js` – Basic + Digest (MD5, MD5-sess, SHA-256), challenge reuse, follows up to
+  3 redirects, accepts self-signed certificates (owner's cameras are set to HTTPS only).
 - `lib/onvif.js` – WS-Security UsernameToken digest, camera clock offset, GetCapabilities ->
-  GetProfiles -> GetStreamUri / GetSnapshotUri; replaces hostnames in returned URIs.
+  GetProfiles -> GetStreamUri / GetSnapshotUri; replaces hostnames in returned URIs. https when
+  port is 443, after an http->https redirect, or when http is refused; http:// service
+  addresses reported by the camera are then upgraded to https.
 - `lib/jpeg.js` – splits JPEG frames by SOI/EOI markers.
 - `lib/sip.js` – minimal SIP UAS over UDP for peer-to-peer calls from the 2N IP Verso 2.0
   (no PBX): INVITE/100/180/200 (+retransmit until ACK), CANCEL->487, BYE both ways,

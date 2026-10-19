@@ -73,6 +73,7 @@ test('camera URLs are completed and IPs checked', () => {
     assert.equal(completeUrl('stream', '172.20.10.50/axis-media/media.amp', ''), 'rtsp://172.20.10.50/axis-media/media.amp');
     assert.equal(completeUrl('stream', 'rtsp://cam/x', '1.2.3.4'), 'rtsp://cam/x');
     assert.equal(completeUrl('stream', '/x', ''), '/x');
+    assert.equal(completeUrl('snapshot', '/axis-cgi/jpg/image.cgi', '172.20.10.50:443'), 'https://172.20.10.50:443/axis-cgi/jpg/image.cgi');
     assert.equal(validHost('172.20.10.50'), true);
     assert.equal(validHost('17210.10.5'), false);
     assert.equal(validHost('172.20.10.256'), false);

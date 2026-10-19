@@ -39,5 +39,6 @@
   "Switch number": "Switch number",
   "HTTP API user": "HTTP API user",
   "HTTP API password": "HTTP API password",
-  "Calls in the history": "Calls in the history"
+  "Calls in the history": "Calls in the history",
+  "ONVIF port (80 http / 443 https)": "ONVIF port (80 http / 443 https)"
 }

@@ -62,7 +62,7 @@
             {
               "type": "number",
               "attr": "onvifPort",
-              "title": "ONVIF port",
+              "title": "ONVIF port (80 http / 443 https)",
               "width": "6%",
               "default": 80
             },
