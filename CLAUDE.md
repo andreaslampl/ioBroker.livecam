@@ -38,7 +38,9 @@ existing cameras adapter lost its images after a while and needed restarts.
   On/off from ioBroker (`view.display`, `cameras.<id>.show`, persisted, pushed as `{type:'view'}`
   over `/ws`): off = black, tiles removed so connections close; ring shows the intercom camera,
   a tap wakes the wall for `?wake=` s (default 120). Asked for because the owner's touch monitor
-  draws too much power for its supply and switches off after a while.
+  draws too much power for its supply and switches off after a while. 0.1.9 broke the full-screen
+  ring with the wall on (layout() returned early when the tile set did not change), fixed in 0.1.10;
+  check ring with wall on AND off when touching layout().
 - `lib/history.js` – `CallHistory`: last N calls (answered / missed / rejected) with a photo
   from the intercom camera taken on ring; `history.json` + JPEGs in the instance data dir
   (`calls/`). Served at `/history` and `/history/<id>.jpg`; missed badge on the camera wall.

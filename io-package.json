@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.1.9",
+    "version": "0.1.10",
     "news": {
+      "0.1.10": {
+        "en": "Fix: the intercom camera goes full screen again when it rings while the camera wall is on (broken in 0.1.9)",
+        "de": "Korrektur: Die Kamera der Türsprechstelle wird beim Klingeln wieder groß, wenn die Kamerawand eingeschaltet ist (Fehler aus 0.1.9)"
+      },
       "0.1.9": {
         "en": "Camera wall and single cameras can be switched on/off from ioBroker (view.display, cameras.<id>.show); ringing and a tap still show it",
         "de": "Kamerawand und einzelne Kameras aus ioBroker ein- und ausschaltbar (view.display, cameras.<id>.show); Klingeln und Antippen zeigen sie trotzdem"
