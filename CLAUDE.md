@@ -57,6 +57,7 @@ existing cameras adapter lost its images after a while and needed restarts.
   (peer-to-peer SIP), which works - useful as a reference when debugging.
 - 0.1.8: the owner's Edge flag works (secure context ok), but the touch PC reported NotFoundError
   (no microphone) -> answering now falls back to listen-only (recvonly) on NotFound/NotReadable.
+  The owner then found the local cause themselves; answering and talking with the real 2N work.
 - Browser mic needs a secure context: on the touch PC the http origins are whitelisted via
   `edge://flags/#unsafely-treat-insecure-origin-as-secure`.
 - A real-browser check (Playwright + headless Chromium, fake mic) passed; it is not part of
