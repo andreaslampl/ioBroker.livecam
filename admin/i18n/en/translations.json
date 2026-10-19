@@ -40,5 +40,16 @@
   "HTTP API user": "HTTP API user",
   "HTTP API password": "HTTP API password",
   "Calls in the history": "Calls in the history",
-  "ONVIF port (80 http / 443 https)": "ONVIF port (80 http / 443 https)"
+  "ONVIF port (80 http / 443 https)": "ONVIF port (80 http / 443 https)",
+  "Ring tone": "Ring tone",
+  "Ding-dong": "Ding-dong",
+  "Westminster gong": "Westminster gong",
+  "Chime": "Chime",
+  "Bell": "Bell",
+  "Telephone": "Telephone",
+  "Own sound file (URL)": "Own sound file (URL)",
+  "Ring tone volume (%)": "Ring tone volume (%)",
+  "URL of the sound file (mp3/wav)": "URL of the sound file (mp3/wav)",
+  "e.g. a file in ioBroker: http://<ioBroker-IP>:8082/vis-2.0/main/klingel.mp3": "e.g. a file in ioBroker: http://<ioBroker-IP>:8082/vis-2.0/main/klingel.mp3",
+  "Try it: open the camera wall with ?testring=1 (e.g. .../view?testring=1) and press 'Klingelton testen'.": "Try it: open the camera wall with ?testring=1 (e.g. .../view?testring=1) and press 'Klingelton testen'."
 }

@@ -290,6 +290,70 @@
           "xs": 12,
           "sm": 6,
           "md": 3
+        },
+        "ringTone": {
+          "type": "select",
+          "label": "Ring tone",
+          "default": "dingdong",
+          "hidden": "!data.intercomEnabled",
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 3,
+          "options": [
+            {
+              "label": "Ding-dong",
+              "value": "dingdong"
+            },
+            {
+              "label": "Westminster gong",
+              "value": "gong"
+            },
+            {
+              "label": "Chime",
+              "value": "chime"
+            },
+            {
+              "label": "Bell",
+              "value": "bell"
+            },
+            {
+              "label": "Telephone",
+              "value": "phone"
+            },
+            {
+              "label": "Own sound file (URL)",
+              "value": "custom"
+            }
+          ]
+        },
+        "ringVolume": {
+          "type": "slider",
+          "label": "Ring tone volume (%)",
+          "min": 0,
+          "max": 100,
+          "step": 5,
+          "default": 70,
+          "hidden": "!data.intercomEnabled",
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        },
+        "ringToneUrl": {
+          "type": "text",
+          "label": "URL of the sound file (mp3/wav)",
+          "help": "e.g. a file in ioBroker: http://<ioBroker-IP>:8082/vis-2.0/main/klingel.mp3",
+          "hidden": "!data.intercomEnabled || data.ringTone !== 'custom'",
+          "xs": 12,
+          "sm": 12,
+          "md": 6
+        },
+        "ringHelp": {
+          "type": "staticText",
+          "text": "Try it: open the camera wall with ?testring=1 (e.g. .../view?testring=1) and press 'Klingelton testen'.",
+          "hidden": "!data.intercomEnabled",
+          "newLine": true,
+          "xs": 12
         }
       }
     }

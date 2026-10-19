@@ -137,3 +137,31 @@ test('adapter: missed call with photo in the history', { skip: !hasFfmpeg() }, a
     await adapter.onStateChange(`${adapter.namespace}.intercom.missedSeen`, { val: true, ack: false });
     assert.equal(s['intercom.missedCount'].val, 0);
 });
+
+test('adapter: intercom camera found by the intercom IP when the name does not match', async t => {
+    const port = 40000 + Math.floor(Math.random() * 10000);
+    const adapter = require('../main.js')({
+        config: {
+            port,
+            publicHost: '127.0.0.1',
+            cameras: [
+                { enabled: true, name: 'Carport', type: 'stream', url: 'rtsp://172.10.10.111/axis-media/media.amp' },
+                { enabled: true, name: 'Sprechanalge', type: 'onvif', host: '172.10.10.120' },
+            ],
+            intercomEnabled: true,
+            sipPort: 30000 + Math.floor(Math.random() * 10000),
+            intercomHost: '172.10.10.120',
+            intercomCamera: 'Sprechanlage',
+            doorMethod: 'none',
+        },
+    });
+    adapter.dataDir = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'lc-'));
+    adapter.subscribeStates = () => {};
+    const warnings = [];
+    adapter.log.warn = m => warnings.push(m);
+    adapter.emit('ready');
+    await until(() => adapter.server && adapter.states['info.connection'] && adapter.states['info.connection'].val === true);
+    t.after(() => new Promise(resolve => adapter.emit('unload', resolve)));
+    assert.equal(adapter.server.intercomCamera, 'sprechanalge');
+    assert.match(warnings.join('\n'), /"Sprechanlage" not found.*using "Sprechanalge"/);
+});

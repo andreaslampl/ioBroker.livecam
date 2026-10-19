@@ -94,6 +94,11 @@ class Livecam extends utils.Adapter {
             intercom: this.intercom,
             intercomCamera,
             history: this.history,
+            sound: {
+                ringTone: this.config.ringTone || 'dingdong',
+                ringToneUrl: (this.config.ringToneUrl || '').trim(),
+                ringVolume: Number(this.config.ringVolume) || 70,
+            },
         });
         try {
             await this.server.listen(port);
@@ -107,15 +112,43 @@ class Livecam extends utils.Adapter {
     }
 
     /** Start the SIP intercom if enabled; returns the camera id shown while ringing. */
+    /**
+     * Camera shown large while the intercom rings: the configured name, otherwise the camera
+     * with the intercom's IP address (the 2N's own camera), otherwise the only camera.
+     */
+    findIntercomCamera(cameraIds) {
+        const c = this.config;
+        const wanted = c.intercomCamera ? cameraId(c.intercomCamera, 0) : '';
+        if (wanted && cameraIds.has(wanted)) {
+            return wanted;
+        }
+        const ip = (c.intercomHost || '').trim();
+        const hostOf = s => {
+            try {
+                return s.cfg.host || new URL(s.cfg.url).hostname;
+            } catch {
+                return s.cfg.host || '';
+            }
+        };
+        const byIp = ip ? [...this.sources.values()].find(s => hostOf(s).replace(/:\d+$/, '') === ip) : null;
+        const found = byIp ? byIp.id : this.sources.size === 1 ? [...this.sources.keys()][0] : '';
+        if (wanted || !found) {
+            this.log.warn(
+                `Intercom camera "${c.intercomCamera || ''}" not found among the active cameras` +
+                    (found ? `, using "${this.sources.get(found).cfg.name}" (same IP as the intercom)` : ''),
+            );
+        } else {
+            this.log.info(`Intercom camera: "${this.sources.get(found).cfg.name}" (same IP as the intercom)`);
+        }
+        return found;
+    }
+
     async startIntercom(cameraIds) {
         const c = this.config;
         if (!c.intercomEnabled) {
             return '';
         }
-        const camera = c.intercomCamera ? cameraId(c.intercomCamera, 0) : '';
-        if (camera && !cameraIds.has(camera)) {
-            this.log.warn(`Intercom camera "${c.intercomCamera}" is not an active camera`);
-        }
+        const camera = this.findIntercomCamera(cameraIds);
         this.intercom = new Intercom({
             sipPort: Number(c.sipPort) || 5060,
             intercomHost: (c.intercomHost || '').trim(),

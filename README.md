@@ -152,7 +152,8 @@ stehen in den Objekten unter `livecam.0.cameras`.
 | Türsprechstelle aktivieren | ✔ |
 | IP-Adresse der Türsprechstelle | IP der 2N, nur sie darf anrufen |
 | SIP-Port | `5060` |
-| Kameraname der Türsprechstelle | Name wie in der Kameratabelle, z. B. `Haustür` |
+| Kameraname der Türsprechstelle | Name wie in der Kameratabelle, z. B. `Haustür`. Leer oder nicht gefunden: die Kamera mit derselben IP wie die Türsprechstelle |
+| Klingelton / Lautstärke | Ding-Dong, Westminster-Gong, Glockenspiel, Glocke, Telefon oder eigene Tondatei; ausprobieren mit `…/view?testring=1` |
 | Tür öffnen über | **Tastencode (DTMF)** mit dem in der 2N eingestellten Schaltcode, oder **2N HTTP-API** |
 
 ### 2. 2N IP Verso (Weboberfläche)

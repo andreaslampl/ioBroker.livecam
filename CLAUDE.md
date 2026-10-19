@@ -32,7 +32,9 @@ existing cameras adapter lost its images after a while and needed restarts.
   `cams`, `cols`, `big`, `mode` (mjpeg|jpg), `fps`; above 2 cameras it polls `/cam/<id>.jpg?fresh=1`
   because browsers allow only 6 connections per host, shared by all tabs (verified: forced MJPEG
   shows 6 of 9; in the field the overview tab + VIS with 4 MJPEG tiles left 2 tiles black).
-  The overview page `/` polls single images too.
+  The overview page `/` polls single images too. Ring tones (dingdong, gong, chime, bell, phone,
+  custom URL) and volume come from the settings (`?tone=`/`?volume=` override, `?testring=1`
+  shows a test button). The intercom camera falls back to the camera with the intercom's IP.
 - `lib/history.js` – `CallHistory`: last N calls (answered / missed / rejected) with a photo
   from the intercom camera taken on ring; `history.json` + JPEGs in the instance data dir
   (`calls/`). Served at `/history` and `/history/<id>.jpg`; missed badge on the camera wall.
@@ -47,8 +49,10 @@ existing cameras adapter lost its images after a while and needed restarts.
 - Run `npm test` before committing.
 - Field test (0.1.6): four cameras work, also in VIS-2 via `/view` in an HTML widget: three
   as type Stream with `rtsp://<ip>/axis-media/media.amp` (cameras set to HTTPS only; RTSP on
-  554 unaffected) and the 2N IP Verso 2.0 camera via ONVIF. Snapshot mode and the SIP
-  intercom are not yet tested on real devices; manufacturer URLs in the README are typical
+  554 unaffected) and the 2N IP Verso 2.0 camera via ONVIF. SIP: the real 2N rings the
+  camera wall (0.1.6); answering was not yet confirmed (owner's first try: button did
+  nothing, cause still open - likely VIS editor mode or mic permission). Snapshot mode is
+  not yet tested on real devices; manufacturer URLs in the README are typical
   examples. Before this adapter the owner answered the 2N with MicroSIP
   (peer-to-peer SIP), which works - useful as a reference when debugging.
 - Browser mic needs a secure context: on the touch PC the http origins are whitelisted via

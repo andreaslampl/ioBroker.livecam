@@ -40,5 +40,16 @@
   "HTTP API user": "HTTP-API-Benutzer",
   "HTTP API password": "HTTP-API-Passwort",
   "Calls in the history": "Anrufe in der Anrufliste",
-  "ONVIF port (80 http / 443 https)": "ONVIF-Port (80 http / 443 https)"
+  "ONVIF port (80 http / 443 https)": "ONVIF-Port (80 http / 443 https)",
+  "Ring tone": "Klingelton",
+  "Ding-dong": "Ding-Dong",
+  "Westminster gong": "Westminster-Gong",
+  "Chime": "Glockenspiel",
+  "Bell": "Glocke",
+  "Telephone": "Telefon",
+  "Own sound file (URL)": "Eigene Tondatei (URL)",
+  "Ring tone volume (%)": "Lautstärke Klingelton (%)",
+  "URL of the sound file (mp3/wav)": "Adresse der Tondatei (mp3/wav)",
+  "e.g. a file in ioBroker: http://<ioBroker-IP>:8082/vis-2.0/main/klingel.mp3": "z. B. eine Datei in ioBroker: http://<ioBroker-IP>:8082/vis-2.0/main/klingel.mp3",
+  "Try it: open the camera wall with ?testring=1 (e.g. .../view?testring=1) and press 'Klingelton testen'.": "Ausprobieren: Kamerawand mit ?testring=1 öffnen (z. B. …/view?testring=1) und auf „Klingelton testen“ drücken."
 }
