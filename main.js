@@ -5,7 +5,7 @@ const path = require('node:path');
 const utils = require('@iobroker/adapter-core');
 const { CameraSource } = require('./lib/source');
 const { CamServer } = require('./lib/server');
-const { cameraId } = require('./lib/util');
+const { cameraId, completeUrl, validHost } = require('./lib/util');
 const { Intercom } = require('./lib/intercom');
 const { CallHistory } = require('./lib/history');
 
@@ -62,7 +62,7 @@ class Livecam extends utils.Adapter {
                     id,
                     name: cam.name || id,
                     type: cam.type || 'stream',
-                    url: (cam.url || '').trim(),
+                    url: completeUrl(cam.type || 'stream', cam.url, cam.host),
                     host: (cam.host || '').trim(),
                     onvifPort: Number(cam.onvifPort) || 80,
                     profile: Number(cam.profile) || 0,
@@ -209,14 +209,36 @@ class Livecam extends utils.Adapter {
 
     checkCamera(cam) {
         const type = cam.type || 'stream';
+        const host = (cam.host || '').trim();
         if (type === 'onvif') {
-            return cam.host ? null : 'ONVIF needs the IP address of the camera';
+            if (!host) {
+                return 'ONVIF needs the IP address of the camera';
+            }
+            return validHost(host) ? null : `IP address "${host}" looks wrong (example: 172.20.10.50)`;
         }
-        if (!cam.url) {
+        if (host && !validHost(host)) {
+            return `IP address "${host}" looks wrong (example: 172.20.10.50)`;
+        }
+        const url = completeUrl(type, cam.url, host);
+        if (!url) {
             return 'no URL configured';
         }
-        if (type === 'snapshot' && !/^https?:\/\//i.test(cam.url)) {
+        if (url.startsWith('/')) {
+            return `URL "${url}" is only a path: enter the full address (rtsp://<IP>${url}) or the IP address`;
+        }
+        if (type === 'snapshot' && !/^https?:\/\//i.test(url)) {
             return 'snapshot URL must start with http:// or https://';
+        }
+        if (type === 'stream' && !/^(rtsps?|https?|rtmp):\/\//i.test(url)) {
+            return `stream URL "${url}" must start with rtsp:// or http://`;
+        }
+        try {
+            const h = new URL(url).hostname;
+            if (/^[\d.]+$/.test(h) && !validHost(h)) {
+                return `IP address "${h}" in the URL looks wrong (example: 172.20.10.50)`;
+            }
+        } catch {
+            return `URL "${url}" is not valid`;
         }
         return null;
     }

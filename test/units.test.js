@@ -6,7 +6,7 @@ const http = require('node:http');
 const { JpegSplitter } = require('../lib/jpeg');
 const { HttpClient } = require('../lib/http-client');
 const { withCredentials, redact } = require('../lib/source');
-const { cameraId } = require('../lib/util');
+const { cameraId, completeUrl, validHost } = require('../lib/util');
 const { testFrames, hasFfmpeg, startFakeCamera } = require('./helpers');
 
 test('JPEG splitter handles multipart headers, garbage and split markers', { skip: !hasFfmpeg() }, () => {
@@ -65,4 +65,16 @@ test('HTTP basic login', async t => {
     t.after(() => server.close());
     const res = await new HttpClient({ user: 'u', password: 'p' }).request(`http://127.0.0.1:${server.address().port}/`);
     assert.equal(res.body.toString(), 'ok');
+});
+
+test('camera URLs are completed and IPs checked', () => {
+    assert.equal(completeUrl('stream', '/axis-media/media.amp', '172.20.10.50'), 'rtsp://172.20.10.50/axis-media/media.amp');
+    assert.equal(completeUrl('snapshot', '/axis-cgi/jpg/image.cgi', '172.20.10.50'), 'http://172.20.10.50/axis-cgi/jpg/image.cgi');
+    assert.equal(completeUrl('stream', '172.20.10.50/axis-media/media.amp', ''), 'rtsp://172.20.10.50/axis-media/media.amp');
+    assert.equal(completeUrl('stream', 'rtsp://cam/x', '1.2.3.4'), 'rtsp://cam/x');
+    assert.equal(completeUrl('stream', '/x', ''), '/x');
+    assert.equal(validHost('172.20.10.50'), true);
+    assert.equal(validHost('17210.10.5'), false);
+    assert.equal(validHost('172.20.10.256'), false);
+    assert.equal(validHost('axis-haustuer.local'), true);
 });

@@ -54,8 +54,10 @@ In der Instanz unter **Kameras** eine Zeile pro Kamera:
 | Breite | Bild wird auf diese Breite verkleinert (z. B. 1280), 0 = Originalgröße |
 | Immer an | Kamera auch ohne Zuschauer abfragen, damit beim Öffnen sofort ein aktuelles Bild da ist |
 
-Benutzername und Passwort werden automatisch in die Adresse eingesetzt, du musst sie nicht
-in die URL schreiben.
+Benutzername und Passwort gehören in die Spalten **Benutzer** und **Passwort**, nicht in die URL;
+der Adapter setzt sie automatisch ein. Trägst du bei *Stream* oder *Snapshot* nur einen Pfad ein
+(z. B. `/axis-media/media.amp`) und die IP in der Spalte *IP*, ergänzt der Adapter die vollständige
+Adresse (`rtsp://<IP>/axis-media/media.amp`).
 
 ### Typische Adressen
 

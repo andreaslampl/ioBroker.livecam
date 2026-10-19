@@ -56,6 +56,8 @@ test('adapter: objects, URLs, live image and cleanup', { skip: !hasFfmpeg() }, a
                 { enabled: true, name: 'Haustür', type: 'snapshot', url: cam.url('/snapshot.jpg'), user: 'admin', password: 'secret', fps: 4 },
                 { enabled: false, name: 'Garage', type: 'stream', url: 'rtsp://x/y' },
                 { enabled: true, name: 'Ohne URL', type: 'stream', url: '' },
+                { enabled: true, name: 'Tippfehler', type: 'stream', host: '17210.10.5', url: '/axis-media/media.amp' },
+                { enabled: true, name: 'Nur Pfad', type: 'stream', url: '/axis-media/media.amp' },
             ],
         },
     });
@@ -68,6 +70,8 @@ test('adapter: objects, URLs, live image and cleanup', { skip: !hasFfmpeg() }, a
     assert.equal(adapter.objects['cameras.haustuer'].common.name, 'Haustür');
     assert.equal(adapter.objects['cameras.garage'], undefined);
     assert.match(adapter.errors.join('\n'), /Ohne URL.*no URL/);
+    assert.match(adapter.errors.join('\n'), /Tippfehler.*17210\.10\.5.*looks wrong/);
+    assert.match(adapter.errors.join('\n'), /Nur Pfad.*only a path/);
     assert.deepEqual(adapter.deleted, ['cameras.old_cam']);
 
     const body = await new Promise((resolve, reject) => {

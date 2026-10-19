@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "news": {
+      "0.1.1": {
+        "en": "A path alone (e.g. /axis-media/media.amp) is completed with the IP address; clear errors for wrong IP addresses and URLs",
+        "de": "Ein Pfad allein (z. B. /axis-media/media.amp) wird mit der IP-Adresse ergänzt; verständliche Fehler bei falscher IP-Adresse oder URL"
+      },
       "0.1.0": {
         "en": "Initial release: live images for VIS-2, SIP door intercom with two-way audio and call history",
         "de": "Erste Version: Livebilder für VIS-2, SIP-Türsprechstelle mit Gegensprechen und Anrufliste"
