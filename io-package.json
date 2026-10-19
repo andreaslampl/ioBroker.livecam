@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "news": {
+      "0.1.4": {
+        "en": "The IP column is only checked when it is used (ONVIF or path-only URL)",
+        "de": "Die Spalte IP wird nur geprüft, wenn sie verwendet wird (ONVIF oder URL nur mit Pfad)"
+      },
       "0.1.3": {
         "en": "Cameras in HTTPS-only mode: ONVIF over https (port 443 or automatic), redirects followed",
         "de": "Kameras im Modus „nur HTTPS“: ONVIF über https (Port 443 oder automatisch), Weiterleitungen werden befolgt"

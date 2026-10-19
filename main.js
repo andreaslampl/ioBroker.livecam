@@ -217,7 +217,8 @@ class Livecam extends utils.Adapter {
             }
             return validHost(host) ? null : `IP address "${host}" looks wrong (example: 172.20.10.50)`;
         }
-        if (host && !validHost(host)) {
+        // The IP column only matters when the URL is just a path.
+        if (host && String(cam.url || '').trim().startsWith('/') && !validHost(host)) {
             return `IP address "${host}" looks wrong (example: 172.20.10.50)`;
         }
         const url = completeUrl(type, cam.url, host);

@@ -58,6 +58,7 @@ test('adapter: objects, URLs, live image and cleanup', { skip: !hasFfmpeg() }, a
                 { enabled: true, name: 'Ohne URL', type: 'stream', url: '' },
                 { enabled: true, name: 'Tippfehler', type: 'stream', host: '17210.10.5', url: '/axis-media/media.amp' },
                 { enabled: true, name: 'Nur Pfad', type: 'stream', url: '/axis-media/media.amp' },
+                { enabled: true, name: 'IP egal', type: 'stream', host: '17210.10.1', url: 'rtsp://127.0.0.1/axis-media/media.amp' },
             ],
         },
     });
@@ -72,6 +73,9 @@ test('adapter: objects, URLs, live image and cleanup', { skip: !hasFfmpeg() }, a
     assert.match(adapter.errors.join('\n'), /Ohne URL.*no URL/);
     assert.match(adapter.errors.join('\n'), /Tippfehler.*17210\.10\.5.*looks wrong/);
     assert.match(adapter.errors.join('\n'), /Nur Pfad.*only a path/);
+    // A wrong but unused IP field does not block a camera with a full URL.
+    assert.doesNotMatch(adapter.errors.join('\n'), /IP egal/);
+    assert.ok(adapter.objects['cameras.ip_egal']);
     assert.deepEqual(adapter.deleted, ['cameras.old_cam']);
 
     const body = await new Promise((resolve, reject) => {
