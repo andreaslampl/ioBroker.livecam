@@ -77,4 +77,7 @@ test('camera URLs are completed and IPs checked', () => {
     assert.equal(validHost('17210.10.5'), false);
     assert.equal(validHost('172.20.10.256'), false);
     assert.equal(validHost('axis-haustuer.local'), true);
+    assert.equal(validHost('172.20.10.50:554'), true);
+    assert.equal(validHost('172.20.10.50:99999'), false);
+    assert.equal(completeUrl('stream', '/axis-media/media.amp', '172.20.10.50:554'), 'rtsp://172.20.10.50:554/axis-media/media.amp');
 });

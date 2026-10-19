@@ -63,7 +63,8 @@ class Livecam extends utils.Adapter {
                     name: cam.name || id,
                     type: cam.type || 'stream',
                     url: completeUrl(cam.type || 'stream', cam.url, cam.host),
-                    host: (cam.host || '').trim(),
+                    // ONVIF has its own port column; drop a port typed into the IP field.
+                    host: (cam.host || '').trim().replace(/:\d+$/, ''),
                     onvifPort: Number(cam.onvifPort) || 80,
                     profile: Number(cam.profile) || 0,
                     user: cam.user || '',

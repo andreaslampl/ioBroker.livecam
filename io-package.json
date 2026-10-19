@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "news": {
+      "0.1.2": {
+        "en": "The IP column may contain a port (e.g. 172.20.10.50:554)",
+        "de": "In der Spalte IP darf ein Port stehen (z. B. 172.20.10.50:554)"
+      },
       "0.1.1": {
         "en": "A path alone (e.g. /axis-media/media.amp) is completed with the IP address; clear errors for wrong IP addresses and URLs",
         "de": "Ein Pfad allein (z. B. /axis-media/media.amp) wird mit der IP-Adresse ergänzt; verständliche Fehler bei falscher IP-Adresse oder URL"
