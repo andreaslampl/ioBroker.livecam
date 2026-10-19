@@ -110,6 +110,7 @@ test('access key and unknown camera', { skip }, async t => {
     assert.equal((await get(url('/cam/garage.jpg?key=abc'))).status, 404);
     const index = await get(url('/?key=abc'));
     assert.match(index.body.toString(), /Haustür.*\/cam\/door\.mjpeg/);
+    assert.doesNotMatch(index.body.toString(), /<img[^>]+src="\/cam\/door\.mjpeg/); // overview polls single images
 });
 
 test('a stuck viewer does not block others or fill the memory', { skip }, async t => {

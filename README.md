@@ -138,9 +138,10 @@ Die Kamerawand lässt sich über Zusätze an der Adresse einstellen, beliebig ko
 Beispiel: 9 Kameras, Haustür groß, 4 Spalten:
 `http://10.0.0.5:8095/view?big=haustuer&cols=4`
 
-**Wie viele Kameras gehen?** Beliebig viele. Bis 4 Kameras laufen echte Livebilder. Ab 5 Kameras
+**Wie viele Kameras gehen?** Beliebig viele. Bis 2 Kameras laufen echte Livebilder. Ab 3 Kameras
 schaltet die Seite automatisch auf schnell aktualisierte Einzelbilder um, weil Browser pro Server
-höchstens 6 Livebild-Verbindungen gleichzeitig offen halten. Darüber blieben Kacheln schwarz,
+höchstens 6 Livebild-Verbindungen gleichzeitig offen halten, und zwar **für alle Tabs zusammen**
+(VIS-Editor, VIS-Ansicht, Übersichtsseite …). Darüber blieben Kacheln schwarz,
 und der Browser würde sogar das Nachladen der Seite blockieren. Die Kamera-IDs (z. B. `haustuer`)
 stehen in den Objekten unter `livecam.0.cameras`.
 

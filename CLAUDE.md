@@ -29,8 +29,10 @@ existing cameras adapter lost its images after a while and needed restarts.
 - `lib/view.js` – `/view` camera wall for the owner's Windows touch PC in VIS-2 (iframe in an
   HTML widget with `allow="microphone; autoplay"`); ring tone via Web Audio; reloads
   the whole page after adapter restarts (detected via the WebSocket) so new cameras appear. Layout via query params
-  `cams`, `cols`, `big`, `mode` (mjpeg|jpg), `fps`; above 4 cameras it polls `/cam/<id>.jpg?fresh=1`
-  because browsers allow only 6 connections per host (verified: forced MJPEG shows 6 of 9).
+  `cams`, `cols`, `big`, `mode` (mjpeg|jpg), `fps`; above 2 cameras it polls `/cam/<id>.jpg?fresh=1`
+  because browsers allow only 6 connections per host, shared by all tabs (verified: forced MJPEG
+  shows 6 of 9; in the field the overview tab + VIS with 4 MJPEG tiles left 2 tiles black).
+  The overview page `/` polls single images too.
 - `lib/history.js` – `CallHistory`: last N calls (answered / missed / rejected) with a photo
   from the intercom camera taken on ring; `history.json` + JPEGs in the instance data dir
   (`calls/`). Served at `/history` and `/history/<id>.jpg`; missed badge on the camera wall.

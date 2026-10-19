@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "news": {
+      "0.1.6": {
+        "en": "Camera wall uses single images from 3 cameras on and the overview page no longer uses live streams, so open tabs do not take away each other's connections",
+        "de": "Kamerawand nutzt ab 3 Kameras Einzelbilder und die Übersichtsseite keine Livestreams mehr, damit sich offene Tabs nicht die Verbindungen wegnehmen"
+      },
       "0.1.5": {
         "en": "Camera wall reloads itself after an adapter restart (new cameras appear automatically); no permanent microphone hint",
         "de": "Die Kamerawand lädt sich nach einem Adapter-Neustart neu (neue Kameras erscheinen automatisch); kein dauerhafter Mikrofon-Hinweis mehr"
