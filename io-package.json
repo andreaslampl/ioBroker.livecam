@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "news": {
+      "0.1.5": {
+        "en": "Camera wall reloads itself after an adapter restart (new cameras appear automatically); no permanent microphone hint",
+        "de": "Die Kamerawand lädt sich nach einem Adapter-Neustart neu (neue Kameras erscheinen automatisch); kein dauerhafter Mikrofon-Hinweis mehr"
+      },
       "0.1.4": {
         "en": "The IP column is only checked when it is used (ONVIF or path-only URL)",
         "de": "Die Spalte IP wird nur geprüft, wenn sie verwendet wird (ONVIF oder URL nur mit Pfad)"
