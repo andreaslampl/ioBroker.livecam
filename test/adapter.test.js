@@ -203,11 +203,11 @@ test('adapter: camera wall and single cameras switched on/off from ioBroker', as
     });
     t.after(() => ws.close());
     await until(() => views.length === 1);
-    assert.deepEqual(views[0], { type: 'view', display: true, hidden: ['garten'] });
+    assert.deepEqual(views[0], { type: 'view', display: true, hidden: ['garten'], ringTone: 'dingdong', ringVolume: 70 });
 
     await adapter.onStateChange(`${adapter.namespace}.view.display`, { val: false, ack: false });
     await until(() => views.length === 2);
-    assert.deepEqual(views[1], { type: 'view', display: false, hidden: ['garten'] });
+    assert.deepEqual(views[1], { type: 'view', display: false, hidden: ['garten'], ringTone: 'dingdong', ringVolume: 70 });
     assert.deepEqual(s['view.display'], { val: false, ack: true });
 
     await adapter.onStateChange(`${adapter.namespace}.cameras.garten.show`, { val: true, ack: false });
@@ -223,7 +223,7 @@ test('adapter: camera wall and single cameras switched on/off from ioBroker', as
             r.on('end', () => resolve(b));
         }).on('error', reject),
     );
-    assert.match(html, /"view":\{"display":false,"hidden":\["carport"\]\}/);
+    assert.match(html, /"view":\{"display":false,"hidden":\["carport"\],"ringTone":"dingdong","ringVolume":70\}/);
 });
 
 test('adapter: further door stations from the table, camera found by name or IP', async t => {
@@ -260,4 +260,45 @@ test('adapter: further door stations from the table, camera found by name or IP'
         ['Mobotix Hof', '192.168.1.141', 'hof', 'dtmf'],
     ]);
     assert.deepEqual(adapter.intercom.sip.allowed, ['192.168.1.120', '192.168.1.130', '192.168.1.141']);
+});
+
+test('adapter: ring tone page lists the tones, a choice is stored and pushed to the camera wall', async t => {
+    const WebSocket = require('ws');
+    const port = 40000 + Math.floor(Math.random() * 10000);
+    const adapter = require('../main.js')({
+        config: { port, publicHost: '127.0.0.1', cameras: [{ enabled: true, name: 'Hof', type: 'stream', url: 'rtsp://192.168.1.140/live' }], ringTone: 'gong', ringVolume: 50 },
+    });
+    adapter.emit('ready');
+    const s = adapter.states;
+    await until(() => s['info.connection'] && s['info.connection'].val === true);
+    t.after(() => new Promise(resolve => adapter.emit('unload', resolve)));
+    assert.equal(s['view.ringTone'].val, 'gong');
+    assert.match(s['info.tonesUrl'].val, /\/tones$/);
+    const page = await (await fetch(`http://127.0.0.1:${port}/tones`)).text();
+    assert.match(page, /"current":"gong"/);
+    assert.match(page, /"elise":"Für Elise"/);
+    assert.doesNotMatch(page, /"custom"/); // no own sound file configured
+
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    const views = [];
+    ws.on('message', d => {
+        const m = JSON.parse(d.toString());
+        if (m.type === 'view') {
+            views.push(m);
+        }
+    });
+    t.after(() => ws.close());
+    await until(() => views.length === 1);
+    const res = await fetch(`http://127.0.0.1:${port}/tones/select?tone=elise&volume=80`, { method: 'POST' });
+    assert.equal(res.status, 200);
+    await until(() => views.length === 2);
+    assert.equal(views[1].ringTone, 'elise');
+    assert.equal(views[1].ringVolume, 80);
+    await until(() => s['view.ringTone'].val === 'elise' && s['view.ringVolume'].val === 80);
+    assert.equal((await fetch(`http://127.0.0.1:${port}/tones/select?tone=nokia&volume=80`, { method: 'POST' })).status, 400);
+
+    // a script switches the tone (e.g. a quieter one at night)
+    await adapter.onStateChange(`${adapter.namespace}.view.ringTone`, { val: 'harfe', ack: false });
+    await until(() => views.length === 3);
+    assert.equal(views[2].ringTone, 'harfe');
 });

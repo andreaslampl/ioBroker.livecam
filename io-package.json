@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "news": {
+      "0.3.0": {
+        "en": "New ring tone page /tones: listen to all tones, set the volume and pick the ring tone with one tap (also as states view.ringTone / view.ringVolume)",
+        "de": "Neue Klingelton-Seite /tones: alle Töne anhören, Lautstärke einstellen und den Klingelton mit einem Tipp auswählen (auch als Datenpunkte view.ringTone / view.ringVolume)"
+      },
       "0.2.0": {
         "en": "Several door stations (e.g. Mobotix T25/T26 besides the 2N): each with its own camera and door opener (DTMF or URL); new ring melodies (Westminster, Für Elise, Ode to Joy, Frère Jacques, ...)",
         "de": "Mehrere Türsprechstellen (z. B. Mobotix T25/T26 neben der 2N), jede mit eigener Kamera und eigenem Türöffner (DTMF oder URL); neue Klingelmelodien (Westminster, Für Elise, Ode an die Freude, Bruder Jakob …)"
@@ -162,6 +166,21 @@
         "name": {
           "en": "Camera wall URL (for VIS-2)",
           "de": "Kamerawand-URL (für VIS-2)"
+        },
+        "type": "string",
+        "role": "url",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.tonesUrl",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Ring tone page URL",
+          "de": "Adresse der Klingelton-Seite"
         },
         "type": "string",
         "role": "url",

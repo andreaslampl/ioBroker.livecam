@@ -185,6 +185,16 @@ stehen in den Objekten unter `livecam.0.cameras`.
 
 MicroSIP kann parallel weiter als zweites Ziel eingetragen bleiben, bis alles läuft.
 
+### Klingeltöne anhören und auswählen
+
+Die Seite **`http://<ioBroker-IP>:8095/tones`** (Adresse auch im Datenpunkt `info.tonesUrl`) zeigt
+alle Klingeltöne als Kacheln: **▶ Anhören**, Lautstärke-Regler und **Verwenden** - der gewählte
+Ton gilt sofort auf allen Kamerawänden, ohne Adapter-Neustart. Auf der Kamerawand führt der Knopf
+**„Klingeltöne“** in der Anrufliste dorthin.
+
+Per Skript geht es über `view.ringTone` (z. B. `elise`, `harfe`) und `view.ringVolume` (0–100),
+etwa nachts ein leiserer Ton.
+
 ### Weitere Türsprechstellen (z. B. Mobotix T25/T26)
 
 Im Reiter „Türsprechstelle“ unter **„Weitere Türsprechstellen“** beliebig viele zusätzliche
@@ -245,6 +255,8 @@ den Ton. In einem normalen Heimnetz ohne Firewall auf dem Server ist nichts zu t
 | `cameras.<name>.lastError` | letzter Fehler (leer = alles ok) |
 | `cameras.<name>.show` | **Schalter:** Kamera auf der Kamerawand anzeigen |
 | `info.viewUrl` | Adresse der Kamerawand für VIS-2 |
+| `info.tonesUrl` | Adresse der Klingelton-Seite |
+| `view.ringTone`, `view.ringVolume` | **Schreibbar:** Klingelton und Lautstärke der Kamerawand |
 | `view.display` | **Schalter:** Kamerawand an (aus = schwarz, beim Klingeln trotzdem an) |
 | `intercom.ringing` | es klingelt (z. B. für Licht, Telegram, Durchsage) |
 | `intercom.active` | Gespräch läuft |

@@ -8,6 +8,7 @@ const { CamServer } = require('./lib/server');
 const { cameraId, completeUrl, validHost } = require('./lib/util');
 const { Intercom } = require('./lib/intercom');
 const { CallHistory } = require('./lib/history');
+const { TONE_LABELS } = require('./lib/tones');
 
 function localAddress() {
     for (const list of Object.values(os.networkInterfaces())) {
@@ -100,9 +101,12 @@ class Livecam extends utils.Adapter {
                 ringToneUrl: (this.config.ringToneUrl || '').trim(),
                 ringVolume: Number(this.config.ringVolume) || 70,
             },
+            onToneSelect: (tone, volume) => this.onToneSelect(tone, volume).catch(err => this.log.warn(err.message)),
         });
         this.server.setView(view);
         this.subscribeStates('view.display');
+        this.subscribeStates('view.ringTone');
+        this.subscribeStates('view.ringVolume');
         this.subscribeStates('cameras.*.show');
         try {
             await this.server.listen(port);
@@ -112,6 +116,7 @@ class Livecam extends utils.Adapter {
         }
         await this.setState('info.connection', true, true);
         await this.setState('info.viewUrl', `${base}/view${query}`, true);
+        await this.setState('info.tonesUrl', `${base}/tones${query}`, true);
         this.log.info(`Live images for ${this.sources.size} camera(s) at ${base}/${query}, camera wall at ${base}/view${query}`);
     }
 
@@ -277,7 +282,46 @@ class Livecam extends utils.Adapter {
                 hidden.push(id);
             }
         }
-        return { display, hidden };
+        // Ring tone picked on /tones (or by a script); starts with the one from the settings.
+        await this.extendObject('view.ringTone', {
+            type: 'state',
+            common: {
+                name: { en: 'Ring tone of the camera wall', de: 'Klingelton der Kamerawand' },
+                type: 'string',
+                role: 'text',
+                read: true,
+                write: true,
+                states: Object.fromEntries(Object.entries(TONE_LABELS).filter(([id]) => id !== 'custom' || this.config.ringToneUrl)),
+            },
+            native: {},
+        });
+        await this.extendObject('view.ringVolume', {
+            type: 'state',
+            common: { name: { en: 'Ring tone volume', de: 'Lautstärke des Klingeltons' }, type: 'number', role: 'level.volume', min: 0, max: 100, unit: '%', read: true, write: true },
+            native: {},
+        });
+        const stored = async id => {
+            const st = await this.getStateAsync(id).catch(() => null);
+            return st ? st.val : null;
+        };
+        let ringTone = await stored('view.ringTone');
+        if (!TONE_LABELS[ringTone]) {
+            ringTone = this.config.ringTone || 'dingdong';
+        }
+        let ringVolume = Number(await stored('view.ringVolume'));
+        if (!(ringVolume > 0 && ringVolume <= 100)) {
+            ringVolume = Number(this.config.ringVolume) || 70;
+        }
+        await this.setState('view.ringTone', ringTone, true);
+        await this.setState('view.ringVolume', ringVolume, true);
+        return { display, hidden, ringTone, ringVolume };
+    }
+
+    /** Ring tone chosen on the /tones page. */
+    async onToneSelect(tone, volume) {
+        this.log.info(`Ring tone: ${TONE_LABELS[tone]}, volume ${volume} %`);
+        await this.setState('view.ringTone', tone, true);
+        await this.setState('view.ringVolume', volume, true);
     }
 
     async publishHistory() {
@@ -293,6 +337,21 @@ class Livecam extends utils.Adapter {
             return;
         }
         const local = id.slice(this.namespace.length + 1);
+        if (local === 'view.ringTone' && this.server) {
+            if (TONE_LABELS[state.val]) {
+                this.server.setView({ ringTone: state.val });
+            } else {
+                this.log.warn(`Unknown ring tone "${state.val}" (${Object.keys(TONE_LABELS).join(', ')})`);
+            }
+            await this.setState(local, this.server.view.ringTone, true);
+            return;
+        }
+        if (local === 'view.ringVolume' && this.server) {
+            const v = Math.round(Math.min(100, Math.max(0, Number(state.val) || 0)));
+            this.server.setView({ ringVolume: v });
+            await this.setState(local, v, true);
+            return;
+        }
         if (local === 'view.display' && this.server) {
             this.server.setView({ display: Boolean(state.val) });
             this.log.info(`Camera wall ${state.val ? 'on' : 'off'}`);

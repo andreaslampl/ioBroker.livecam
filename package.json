@@ -1,6 +1,6 @@
 {
   "name": "iobroker.livecam",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Robust live images (MJPEG) from RTSP, ONVIF and HTTP cameras for ioBroker VIS-2",
   "author": "andreaslampl",
   "license": "MIT",
