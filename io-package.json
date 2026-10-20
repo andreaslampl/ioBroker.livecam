@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "news": {
+      "0.3.1": {
+        "en": "Installs on Node.js 20 again: werift pinned to 0.24.4 (0.25 needs Node.js 22)",
+        "de": "Installation auf Node.js 20 wieder möglich: werift auf 0.24.4 festgelegt (0.25 braucht Node.js 22)"
+      },
       "0.3.0": {
         "en": "New ring tone page /tones: listen to all tones, set the volume and pick the ring tone with one tap (also as states view.ringTone / view.ringVolume)",
         "de": "Neue Klingelton-Seite /tones: alle Töne anhören, Lautstärke einstellen und den Klingelton mit einem Tipp auswählen (auch als Datenpunkte view.ringTone / view.ringVolume)"

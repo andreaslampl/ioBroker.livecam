@@ -55,6 +55,12 @@ existing cameras adapter lost its images after a while and needed restarts.
   (`calls/`). Served at `/history` and `/history/<id>.jpg`; missed badge on the camera wall.
 - `test/` – `node --test`, uses real ffmpeg (`testsrc`) and fake cameras from `test/helpers.js`.
 
+## Dependencies
+
+- werift is pinned to 0.24.4 (exact): 0.25.x requires Node.js >= 22 and the install fails with
+  EBADENGINE on the owner's ioBroker (Node.js 20.20.2, 0.3.1). Before raising it, check
+  `npm view werift engines` and run the tests with Node 20.
+
 ## Conventions
 
 - UI texts and README in German, code and comments in English.
