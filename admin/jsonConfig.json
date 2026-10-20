@@ -279,6 +279,104 @@
           "sm": 6,
           "md": 3
         },
+        "stationsHeader": {
+          "type": "header",
+          "text": "Further door stations (e.g. Mobotix T25/T26)",
+          "size": 5,
+          "hidden": "!data.intercomEnabled",
+          "newLine": true
+        },
+        "stationsHelp": {
+          "type": "staticText",
+          "text": "Each station calls sip:iobroker@<ioBroker-IP>:<SIP port> directly (peer to peer, no PBX). Camera: name from the camera table (empty = camera with the same IP). Door: DTMF code during the call, or a URL (GET, Basic/Digest login).",
+          "hidden": "!data.intercomEnabled",
+          "xs": 12
+        },
+        "intercoms": {
+          "type": "table",
+          "hidden": "!data.intercomEnabled",
+          "xs": 12,
+          "newLine": true,
+          "items": [
+            {
+              "type": "checkbox",
+              "attr": "enabled",
+              "title": "Active",
+              "width": "5%",
+              "default": true
+            },
+            {
+              "type": "text",
+              "attr": "name",
+              "title": "Name",
+              "width": "12%",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "host",
+              "title": "IP address",
+              "width": "11%",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "camera",
+              "title": "Camera name",
+              "width": "11%",
+              "default": ""
+            },
+            {
+              "type": "select",
+              "attr": "doorMethod",
+              "title": "Door opener",
+              "width": "10%",
+              "default": "dtmf",
+              "options": [
+                {
+                  "label": "Key code (DTMF)",
+                  "value": "dtmf"
+                },
+                {
+                  "label": "URL (HTTP)",
+                  "value": "url"
+                },
+                {
+                  "label": "none",
+                  "value": "none"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "attr": "doorCode",
+              "title": "Door code",
+              "width": "8%",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "doorUrl",
+              "title": "Door URL",
+              "width": "23%",
+              "default": ""
+            },
+            {
+              "type": "text",
+              "attr": "user",
+              "title": "User",
+              "width": "8%",
+              "default": ""
+            },
+            {
+              "type": "password",
+              "attr": "password",
+              "title": "Password",
+              "width": "10%",
+              "default": ""
+            }
+          ]
+        },
         "historySize": {
           "type": "number",
           "label": "Calls in the history",
@@ -320,6 +418,42 @@
             {
               "label": "Telephone",
               "value": "phone"
+            },
+            {
+              "label": "Westminster (full)",
+              "value": "westminster"
+            },
+            {
+              "label": "Für Elise",
+              "value": "elise"
+            },
+            {
+              "label": "Ode to Joy",
+              "value": "ode"
+            },
+            {
+              "label": "Frère Jacques",
+              "value": "jakob"
+            },
+            {
+              "label": "Alle meine Entchen",
+              "value": "entchen"
+            },
+            {
+              "label": "Cuckoo",
+              "value": "kuckuck"
+            },
+            {
+              "label": "Xylophone",
+              "value": "xylophon"
+            },
+            {
+              "label": "Harp",
+              "value": "harfe"
+            },
+            {
+              "label": "Triad",
+              "value": "dreiklang"
             },
             {
               "label": "Own sound file (URL)",

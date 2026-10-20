@@ -23,7 +23,10 @@ existing cameras adapter lost its images after a while and needed restarts.
   (no PBX): INVITE/100/180/200 (+retransmit until ACK), CANCEL->487, BYE both ways,
   only `intercomHost` may call (403 otherwise).
 - `lib/sdp.js` – G.711 (caller's preference order) + telephone-event; video m-lines declined.
-- `lib/intercom.js` – bridges intercom RTP <-> browser WebRTC (werift) without transcoding;
+- `lib/intercom.js` – bridges intercom RTP <-> browser WebRTC (werift) without transcoding; several
+  stations (`stations`: name, host, camera, door) - the main one from the old single fields plus the
+  `intercoms` table (e.g. Mobotix T25/T26); station picked by the caller's IP, state/ring carry its
+  camera; door methods dtmf, http (2N API), url (any GET with Basic/Digest);
   browsers connect via `/ws`; first browser to answer gets the call; door via DTMF
   (RFC 4733) or 2N HTTP API `/api/switch/ctrl`.
 - `lib/view.js` – `/view` camera wall for the owner's Windows touch PC in VIS-2 (iframe in an
@@ -33,7 +36,8 @@ existing cameras adapter lost its images after a while and needed restarts.
   because browsers allow only 6 connections per host, shared by all tabs (verified: forced MJPEG
   shows 6 of 9; in the field the overview tab + VIS with 4 MJPEG tiles left 2 tiles black).
   The overview page `/` polls single images too. Ring tones (dingdong, gong, chime, bell, phone,
-  custom URL) and volume come from the settings (`?tone=`/`?volume=` override, `?testring=1`
+  custom URL, plus melodies written as note strings via `mel()` - only public-domain tunes; mind the
+  double backslashes inside the page template) and volume come from the settings (`?tone=`/`?volume=` override, `?testring=1`
   shows a test button). The intercom camera falls back to the camera with the intercom's IP.
   On/off from ioBroker (`view.display`, `cameras.<id>.show`, persisted, pushed as `{type:'view'}`
   over `/ws`): off = black, tiles removed so connections close; ring shows the intercom camera,
@@ -64,6 +68,8 @@ existing cameras adapter lost its images after a while and needed restarts.
 - 0.1.8: the owner's Edge flag works (secure context ok), but the touch PC reported NotFoundError
   (no microphone) -> answering now falls back to listen-only (recvonly) on NotFound/NotReadable.
   The owner then found the local cause themselves; answering and talking with the real 2N work.
+- 0.2.0: owner asked for more ring melodies and Mobotix T25/T26 via SIP (not yet tested with a real
+  Mobotix; fake test uses a T25-like SDP with G.722 first).
 - Browser mic needs a secure context: on the touch PC the http origins are whitelisted via
   `edge://flags/#unsafely-treat-insecure-origin-as-secure`.
 - A real-browser check (Playwright + headless Chromium, fake mic) passed; it is not part of

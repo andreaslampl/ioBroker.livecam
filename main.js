@@ -120,13 +120,12 @@ class Livecam extends utils.Adapter {
      * Camera shown large while the intercom rings: the configured name, otherwise the camera
      * with the intercom's IP address (the 2N's own camera), otherwise the only camera.
      */
-    findIntercomCamera(cameraIds) {
-        const c = this.config;
-        const wanted = c.intercomCamera ? cameraId(c.intercomCamera, 0) : '';
+    findIntercomCamera(cameraIds, name = this.config.intercomCamera, ip = this.config.intercomHost) {
+        const wanted = name ? cameraId(name, 0) : '';
         if (wanted && cameraIds.has(wanted)) {
             return wanted;
         }
-        const ip = (c.intercomHost || '').trim();
+        ip = (ip || '').trim();
         const hostOf = s => {
             try {
                 return s.cfg.host || new URL(s.cfg.url).hostname;
@@ -138,13 +137,51 @@ class Livecam extends utils.Adapter {
         const found = byIp ? byIp.id : this.sources.size === 1 ? [...this.sources.keys()][0] : '';
         if (wanted || !found) {
             this.log.warn(
-                `Intercom camera "${c.intercomCamera || ''}" not found among the active cameras` +
+                `Intercom camera "${name || ''}" not found among the active cameras` +
                     (found ? `, using "${this.sources.get(found).cfg.name}" (same IP as the intercom)` : ''),
             );
         } else {
-            this.log.info(`Intercom camera: "${this.sources.get(found).cfg.name}" (same IP as the intercom)`);
+            this.log.info(`Intercom camera: "${this.sources.get(found).cfg.name}" (same IP as the intercom ${ip})`);
         }
         return found;
+    }
+
+    /** Door stations: the main one from the intercom tab plus the table of further stations (e.g. Mobotix T25/T26). */
+    intercomStations(cameraIds) {
+        const c = this.config;
+        const stations = [
+            {
+                name: '',
+                host: (c.intercomHost || '').trim(),
+                camera: this.findIntercomCamera(cameraIds),
+                door: {
+                    method: c.doorMethod || 'none',
+                    code: c.doorCode || '',
+                    switchNo: Number(c.doorSwitch) || 1,
+                    user: c.intercomUser || '',
+                    password: c.intercomPassword || '',
+                },
+            },
+        ];
+        for (const row of Array.isArray(c.intercoms) ? c.intercoms : []) {
+            const host = String(row.host || '').trim();
+            if (row.enabled === false || !host) {
+                continue;
+            }
+            stations.push({
+                name: String(row.name || '').trim() || host,
+                host,
+                camera: this.findIntercomCamera(cameraIds, row.camera, host),
+                door: {
+                    method: row.doorMethod || 'none',
+                    code: row.doorCode || '',
+                    url: String(row.doorUrl || '').trim(),
+                    user: row.user || '',
+                    password: row.password || '',
+                },
+            });
+        }
+        return stations;
     }
 
     async startIntercom(cameraIds) {
@@ -152,19 +189,12 @@ class Livecam extends utils.Adapter {
         if (!c.intercomEnabled) {
             return '';
         }
-        const camera = this.findIntercomCamera(cameraIds);
+        const stations = this.intercomStations(cameraIds);
+        const camera = stations[0].camera;
         this.intercom = new Intercom({
             sipPort: Number(c.sipPort) || 5060,
-            intercomHost: (c.intercomHost || '').trim(),
-            camera,
+            stations,
             ringTimeout: Number(c.ringTimeout) || 60,
-            door: {
-                method: c.doorMethod || 'none',
-                code: c.doorCode || '',
-                switchNo: Number(c.doorSwitch) || 1,
-                user: c.intercomUser || '',
-                password: c.intercomPassword || '',
-            },
             log: this.log,
         });
         this.intercom.on('state', ({ state, caller }) => {
@@ -182,10 +212,10 @@ class Livecam extends utils.Adapter {
         });
         this.history.load();
         let ringPhoto = null;
-        this.intercom.on('ring', () => {
+        this.intercom.on('ring', ({ camera: ringCamera }) => {
             this.setState('intercom.lastRing', new Date().toISOString(), true);
-            // Photo of the visitor for the call history.
-            const source = this.sources.get(camera);
+            // Photo of the visitor for the call history, from the camera of the station that rings.
+            const source = this.sources.get(ringCamera || camera);
             ringPhoto = source ? source.getFrame(1500, 8000).catch(() => null) : Promise.resolve(null);
         });
         this.intercom.on('callEnd', async entry => {
@@ -201,7 +231,8 @@ class Livecam extends utils.Adapter {
         });
         try {
             const port = await this.intercom.start();
-            this.log.info(`Intercom: listening for SIP calls on UDP port ${port}${c.intercomHost ? ` from ${c.intercomHost}` : ''}`);
+            const hosts = stations.map(st => st.host).filter(Boolean);
+            this.log.info(`Intercom: listening for SIP calls on UDP port ${port}${hosts.length ? ` from ${hosts.join(', ')}` : ''}`);
         } catch (err) {
             this.log.error(`Intercom: cannot open SIP port ${c.sipPort || 5060}: ${err.message}`);
             this.intercom = null;

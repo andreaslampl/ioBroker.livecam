@@ -96,7 +96,7 @@ Eine Übersicht aller Kameras gibt es unter `http://<ioBroker-IP>:8095/`.
 gleichzeitig. Für mehr Kameras die **Kamerawand** (`/view`, schaltet automatisch um) oder die
 **snapshotUrl** mit einem Aktualisierungsintervall (z. B. 1 s) verwenden.
 
-## Kamerawand mit Türsprechstelle (2N)
+## Kamerawand mit Türsprechstelle (2N, Mobotix)
 
 Die Seite **`http://<ioBroker-IP>:8095/view`** zeigt alle Kameras im Raster. Ist die
 Türsprechstelle aktiviert und es klingelt, wird die Türkamera bildschirmfüllend angezeigt, mit
@@ -171,7 +171,7 @@ stehen in den Objekten unter `livecam.0.cameras`.
 | IP-Adresse der Türsprechstelle | IP der 2N, nur sie darf anrufen |
 | SIP-Port | `5060` |
 | Kameraname der Türsprechstelle | Name wie in der Kameratabelle, z. B. `Haustür`. Leer oder nicht gefunden: die Kamera mit derselben IP wie die Türsprechstelle |
-| Klingelton / Lautstärke | Ding-Dong, Westminster-Gong, Glockenspiel, Glocke, Telefon oder eigene Tondatei; ausprobieren mit `…/view?testring=1` |
+| Klingelton / Lautstärke | Ding-Dong, Westminster-Gong, Glockenspiel, Glocke, Telefon, Melodien (Westminster vollständig, Für Elise, Ode an die Freude, Bruder Jakob, Alle meine Entchen, Kuckuck, Xylophon, Harfe, Dreiklang) oder eigene Tondatei; ausprobieren mit `…/view?testring=1&tone=elise` |
 | Tür öffnen über | **Tastencode (DTMF)** mit dem in der 2N eingestellten Schaltcode, oder **2N HTTP-API** |
 
 ### 2. 2N IP Verso (Weboberfläche)
@@ -184,6 +184,23 @@ stehen in den Objekten unter `livecam.0.cameras`.
 4. Audio-Codec: **G.711** (PCMU/PCMA) muss erlaubt sein (Standard).
 
 MicroSIP kann parallel weiter als zweites Ziel eingetragen bleiben, bis alles läuft.
+
+### Weitere Türsprechstellen (z. B. Mobotix T25/T26)
+
+Im Reiter „Türsprechstelle“ unter **„Weitere Türsprechstellen“** beliebig viele zusätzliche
+Sprechstellen eintragen: Name, IP-Adresse, Kamera (leer = Kamera mit derselben IP) und Türöffner.
+Klingelt eine davon, zeigt die Kamerawand **ihre** Kamera groß, die Anrufliste ihren Namen.
+
+| Türöffner | Wie |
+| --- | --- |
+| Tastencode (DTMF) | Code, den die Sprechstelle während des Gesprächs als Türöffner-Befehl annimmt |
+| URL (HTTP) | beliebige Adresse, die die Tür öffnet (GET, mit Benutzer/Passwort per Basic/Digest) |
+
+**Mobotix T25/T26:** in der Weboberfläche unter den SIP-/Telefon-Einstellungen einen
+**Direktruf (Peer-to-Peer, ohne SIP-Server)** an **`sip:iobroker@<ioBroker-IP>:5060`** anlegen und
+der Klingeltaste zuweisen; Audio-Codec **G.711** (PCMU/PCMA) erlauben. Für die Tür entweder die
+DTMF-Fernsteuerung der T25 mit einem Code einrichten (Code im Adapter eintragen) oder die
+HTTP-Adresse des Türöffners verwenden. Die genauen Menünamen hängen von der Mobotix-Software ab.
 
 ### 3. Touch-PC (Microsoft Edge oder Chrome)
 

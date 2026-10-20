@@ -13,12 +13,15 @@ const { Intercom } = require('../lib/intercom');
 const { SipServer, parseMessage } = require('../lib/sip');
 const { quietLog, until } = require('./helpers');
 
-/** Fake intercom: places a call, answers ACK/BYE, collects RTP. */
-async function fake2N(sipPort) {
+/**
+ * Fake intercom: places a call, answers ACK/BYE, collects RTP. `ip` = its own address (several
+ * stations), `mobotix` = SDP like a Mobotix T25 (G.722 preferred, then G.711, DTMF, video).
+ */
+async function fake2N(sipPort, { ip = '127.0.0.1', mobotix = false } = {}) {
     const sip = dgram.createSocket('udp4');
     const rtp = dgram.createSocket('udp4');
-    await new Promise(r => sip.bind(0, '127.0.0.1', r));
-    await new Promise(r => rtp.bind(0, '127.0.0.1', r));
+    await new Promise(r => sip.bind(0, ip, r));
+    await new Promise(r => rtp.bind(0, ip, r));
     const n = { responses: [], requests: [], audio: [], dtmf: [], callId: `call-${Date.now()}@2n`, fromTag: 'tag2n' };
     sip.on('message', buf => {
         const msg = parseMessage(buf);
@@ -46,21 +49,24 @@ async function fake2N(sipPort) {
     const base = (method, cseq, extra = [], body = '') =>
         [
             `${method} sip:door@127.0.0.1:${sipPort} SIP/2.0`,
-            `Via: SIP/2.0/UDP 127.0.0.1:${sip.address().port};branch=z9hG4bK${method}${cseq}`,
+            `Via: SIP/2.0/UDP ${ip}:${sip.address().port};branch=z9hG4bK${method}${cseq}`,
             'Max-Forwards: 70',
-            `From: "Haustuer" <sip:verso@127.0.0.1>;tag=${n.fromTag}`,
+            `From: "${mobotix ? 'MOBOTIX T25' : 'Haustuer'}" <sip:verso@${ip}>;tag=${n.fromTag}`,
             `To: <sip:door@127.0.0.1>${n.toTag && method !== 'INVITE' && method !== 'CANCEL' ? `;tag=${n.toTag}` : ''}`,
             `Call-ID: ${n.callId}`,
             `CSeq: ${cseq} ${method}`,
-            `Contact: <sip:verso@127.0.0.1:${sip.address().port}>`,
+            `Contact: <sip:verso@${ip}:${sip.address().port}>`,
             ...extra,
             `Content-Length: ${Buffer.byteLength(body)}`,
             '',
             body,
         ].join('\r\n');
     const sdp = [
-        'v=0', 'o=2N 1 1 IN IP4 127.0.0.1', 's=2N', 'c=IN IP4 127.0.0.1', 't=0 0',
-        `m=audio ${rtp.address().port} RTP/AVP 8 0 101`, 'a=rtpmap:101 telephone-event/8000', 'a=fmtp:101 0-15',
+        'v=0', `o=${mobotix ? 'MOBOTIX' : '2N'} 1 1 IN IP4 ${ip}`, 's=call', `c=IN IP4 ${ip}`, 't=0 0',
+        ...(mobotix
+            ? [`m=audio ${rtp.address().port} RTP/AVP 9 0 8 101`, 'a=rtpmap:9 G722/8000', 'a=rtpmap:0 PCMU/8000', 'a=rtpmap:8 PCMA/8000']
+            : [`m=audio ${rtp.address().port} RTP/AVP 8 0 101`]),
+        'a=rtpmap:101 telephone-event/8000', 'a=fmtp:101 0-15',
         'm=video 9078 RTP/AVP 96', 'a=rtpmap:96 H264/90000', '',
     ].join('\r\n');
     n.invite = () => sip.send(base('INVITE', 1, ['Content-Type: application/sdp'], sdp), sipPort, '127.0.0.1');
@@ -337,4 +343,60 @@ test('SIP calls from other devices are refused', async t => {
     await until(() => n.responses.length);
     assert.equal(n.responses[0].status, 403);
     assert.equal(invited, false);
+});
+
+test('several stations: a Mobotix T25 calls, its camera is shown, door by URL', async t => {
+    const doorCalls = [];
+    const door = http.createServer((req, res) => {
+        doorCalls.push(req.url);
+        res.end('OK');
+    });
+    await new Promise(r => door.listen(0, '127.0.0.1', r));
+    t.after(() => new Promise(r => door.close(r)));
+    const intercom = new Intercom({
+        sipPort: 0,
+        stations: [
+            { host: '127.0.0.1', camera: 'haustuer', door: { method: 'dtmf', code: '1' } },
+            { name: 'Mobotix Garage', host: '127.0.0.2', camera: 'garage', door: { method: 'url', url: `http://127.0.0.1:${door.address().port}/control/door?open=1` } },
+        ],
+        log: quietLog,
+    });
+    const sipPort = await intercom.start();
+    const rings = [];
+    intercom.on('ring', e => rings.push(e));
+    const server = http.createServer();
+    intercom.attach(server);
+    await new Promise(r => server.listen(0, '127.0.0.1', r));
+    t.after(async () => {
+        await intercom.stop();
+        server.closeAllConnections();
+        await new Promise(r => server.close(r));
+    });
+    const b = await fakeBrowser(server.address().port);
+    t.after(() => b.close());
+    await until(() => b.state);
+    assert.equal(b.state.camera, 'haustuer'); // idle: default station
+
+    const m = await fake2N(sipPort, { ip: '127.0.0.2', mobotix: true });
+    t.after(() => m.close());
+    m.invite();
+    await until(() => b.state.state === 'ringing');
+    assert.equal(b.state.caller, 'Mobotix Garage');
+    assert.equal(b.state.camera, 'garage');
+    assert.equal(b.state.doorAvailable, true);
+    assert.deepEqual(rings, [{ caller: 'Mobotix Garage', camera: 'garage' }]);
+
+    await b.answer();
+    await until(() => m.responses.some(r => r.status === 200));
+    const ok = m.responses.find(r => r.status === 200);
+    assert.match(ok.body, /m=audio \d+ RTP\/AVP 0 101/); // G.722 not supported: PCMU, its next choice
+    m.toTag = /tag=([^;\s]+)/.exec(ok.header('to'))[1];
+    m.ack();
+    await until(() => b.state.state === 'active');
+    b.send({ type: 'door' });
+    await until(() => doorCalls.length === 1);
+    assert.equal(doorCalls[0], '/control/door?open=1');
+    b.send({ type: 'hangup' });
+    await until(() => intercom.state === 'idle');
+    assert.equal(b.state.camera, 'haustuer');
 });

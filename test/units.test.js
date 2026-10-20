@@ -82,3 +82,14 @@ test('camera URLs are completed and IPs checked', () => {
     assert.equal(validHost('192.168.1.50:99999'), false);
     assert.equal(completeUrl('stream', '/axis-media/media.amp', '192.168.1.50:554'), 'rtsp://192.168.1.50:554/axis-media/media.amp');
 });
+
+test('ring tones: every melody has notes (escaping inside the page template)', () => {
+    const { renderView } = require('../lib/view');
+    const html = renderView({ cameras: [], intercomCamera: '', intercom: true, key: '', sound: {} });
+    const js = html.slice(html.indexOf('function mel('), html.indexOf('const toneName'));
+    const tones = new Function(`${js}; return TONES;`)();
+    for (const [name, t] of Object.entries(tones)) {
+        assert.ok(t.notes.length > 1 && t.every > 1000, name);
+    }
+    assert.equal(Math.round(tones.elise.notes[0][0]), 659); // E5
+});

@@ -225,3 +225,39 @@ test('adapter: camera wall and single cameras switched on/off from ioBroker', as
     );
     assert.match(html, /"view":\{"display":false,"hidden":\["carport"\]\}/);
 });
+
+test('adapter: further door stations from the table, camera found by name or IP', async t => {
+    const port = 40000 + Math.floor(Math.random() * 10000);
+    const adapter = require('../main.js')({
+        config: {
+            port,
+            publicHost: '127.0.0.1',
+            cameras: [
+                { enabled: true, name: 'Haustür', type: 'onvif', host: '192.168.1.120' },
+                { enabled: true, name: 'Garage', type: 'stream', url: 'rtsp://192.168.1.130/live' },
+                { enabled: true, name: 'Hof', type: 'stream', url: 'rtsp://192.168.1.140/live' },
+            ],
+            intercomEnabled: true,
+            sipPort: 30000 + Math.floor(Math.random() * 10000),
+            intercomHost: '192.168.1.120',
+            doorMethod: 'none',
+            intercoms: [
+                { enabled: true, name: 'Mobotix Garage', host: '192.168.1.130', camera: '', doorMethod: 'url', doorUrl: 'http://192.168.1.130/door' },
+                { enabled: true, name: 'Mobotix Hof', host: '192.168.1.141', camera: 'Hof', doorMethod: 'dtmf', doorCode: '*1' },
+                { enabled: false, name: 'Alt', host: '192.168.1.150' },
+            ],
+        },
+    });
+    adapter.dataDir = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'lc-'));
+    adapter.subscribeStates = () => {};
+    adapter.emit('ready');
+    await until(() => adapter.server && adapter.states['info.connection'] && adapter.states['info.connection'].val === true);
+    t.after(() => new Promise(resolve => adapter.emit('unload', resolve)));
+    const st = adapter.intercom.stations;
+    assert.deepEqual(st.map(s => [s.name, s.host, s.camera, s.door.method]), [
+        ['', '192.168.1.120', 'haustuer', 'none'],
+        ['Mobotix Garage', '192.168.1.130', 'garage', 'url'],
+        ['Mobotix Hof', '192.168.1.141', 'hof', 'dtmf'],
+    ]);
+    assert.deepEqual(adapter.intercom.sip.allowed, ['192.168.1.120', '192.168.1.130', '192.168.1.141']);
+});

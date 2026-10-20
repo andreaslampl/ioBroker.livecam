@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.1.10",
+    "version": "0.2.0",
     "news": {
+      "0.2.0": {
+        "en": "Several door stations (e.g. Mobotix T25/T26 besides the 2N): each with its own camera and door opener (DTMF or URL); new ring melodies (Westminster, Für Elise, Ode to Joy, Frère Jacques, ...)",
+        "de": "Mehrere Türsprechstellen (z. B. Mobotix T25/T26 neben der 2N), jede mit eigener Kamera und eigenem Türöffner (DTMF oder URL); neue Klingelmelodien (Westminster, Für Elise, Ode an die Freude, Bruder Jakob …)"
+      },
       "0.1.10": {
         "en": "Fix: the intercom camera goes full screen again when it rings while the camera wall is on (broken in 0.1.9)",
         "de": "Korrektur: Die Kamera der Türsprechstelle wird beim Klingeln wieder groß, wenn die Kamerawand eingeschaltet ist (Fehler aus 0.1.9)"
@@ -104,13 +108,15 @@
     "historySize": 20,
     "ringTone": "dingdong",
     "ringToneUrl": "",
-    "ringVolume": 70
+    "ringVolume": 70,
+    "intercoms": []
   },
   "protectedNative": [
     "cameras",
     "accessKey",
     "intercomPassword",
-    "doorCode"
+    "doorCode",
+    "intercoms"
   ],
   "objects": [],
   "instanceObjects": [
