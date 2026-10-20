@@ -94,6 +94,24 @@ async function startFakeCamera({ user = 'admin', password = 'secret', fps = 10 }
             res.on('close', () => clearInterval(timer));
             return;
         }
+        if (req.url.startsWith('/control/faststream.jpg')) {
+            // like a Mobotix: boundary announced with its dashes, parts without Content-Length
+            cam.streams++;
+            res.writeHead(200, { 'Content-Type': 'multipart/x-mixed-replace;boundary=--myboundary' });
+            let i = 0;
+            const timer = setInterval(() => {
+                if (!cam.stalled) {
+                    res.write(Buffer.concat([Buffer.from('--myboundary\r\nContent-Type: image/jpeg\r\n\r\n'), frames[i++ % frames.length], Buffer.from('\r\n')]));
+                }
+            }, 1000 / 20);
+            res.on('close', () => clearInterval(timer));
+            return;
+        }
+        if (req.url.startsWith('/h264')) {
+            res.writeHead(200, { 'Content-Type': 'video/H264' });
+            res.write(Buffer.alloc(100));
+            return;
+        }
         res.writeHead(404);
         res.end();
     });

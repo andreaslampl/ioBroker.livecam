@@ -19,6 +19,11 @@ existing cameras adapter lost its images after a while and needed restarts.
   port is 443, after an http->https redirect, or when http is refused; http:// service
   addresses reported by the camera are then upgraded to https.
 - `lib/jpeg.js` – splits JPEG frames by SOI/EOI markers.
+- HTTP MJPEG in mode stream (0.3.2): read directly (`HttpClient.open` keeps the response streaming,
+  `_readHttp` splits frames, throttled to fps); single image content -> snapshot polling, other
+  content (or `width` set, needs scaling) -> ffmpeg. Owner's Mobotix T25: `/control/faststream.jpg?
+  stream=full` plays in VLC but not in livecam (details/log still open); ffmpeg handled a fake
+  Mobotix-like stream fine, so the cause is not proven.
 - `lib/sip.js` – minimal SIP UAS over UDP for peer-to-peer calls from the 2N IP Verso 2.0
   (no PBX): INVITE/100/180/200 (+retransmit until ACK), CANCEL->487, BYE both ways,
   only `intercomHost` may call (403 otherwise).

@@ -96,7 +96,8 @@ test('wrong password is reported and retried, not fatal', { skip }, async t => {
 test('missing ffmpeg gives a clear hint', async t => {
     const cam = await startFakeCamera();
     t.after(() => cam.close());
-    const source = new CameraSource({ id: 'x', type: 'stream', url: cam.url('/video.mjpeg') }, { log: quietLog, ffmpegPath: '/nonexistent/ffmpeg' });
+    // RTSP needs ffmpeg (HTTP MJPEG is read without it since 0.3.2)
+    const source = new CameraSource({ id: 'x', type: 'stream', url: `rtsp://127.0.0.1:${cam.port}/stream` }, { log: quietLog, ffmpegPath: '/nonexistent/ffmpeg' });
     t.after(() => source.destroy());
     source.addViewer();
     await until(() => source.error);

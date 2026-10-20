@@ -68,7 +68,7 @@ Bitte im Handbuch der Kamera prüfen, sie unterscheiden sich je nach Modell und 
 | **Axis** | `rtsp://IP/axis-media/media.amp?resolution=1280x720` oder `http://IP/axis-cgi/mjpg/video.cgi` | `http://IP/axis-cgi/jpg/image.cgi` |
 | **Hanwha** | `rtsp://IP:554/profile2/media.smp` | `http://IP/stw-cgi/video.cgi?msubmenu=snapshot&action=view` |
 | **Sony** | am besten **ONVIF** | `http://IP/oneshotimage.jpg` |
-| **Mobotix** | `http://IP/cgi-bin/faststream.jpg?stream=full&fps=5` (neuere Modelle auch ONVIF/RTSP) | `http://IP/record/current.jpg` |
+| **Mobotix** | Typ Stream: `http://IP/control/faststream.jpg?stream=full` (bei manchen Modellen `/cgi-bin/faststream.jpg?stream=full`; neuere auch ONVIF/RTSP) | `http://IP/record/current.jpg` |
 | **2N** | `rtsp://IP:554/h264_stream` | `http://IP/api/camera/snapshot?width=640&height=480` |
 
 **Hinweise:**

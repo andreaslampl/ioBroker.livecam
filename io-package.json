@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.3.1",
+    "version": "0.3.2",
     "news": {
+      "0.3.2": {
+        "en": "HTTP MJPEG streams (e.g. Mobotix faststream) are read directly without ffmpeg (less CPU, Basic/Digest login, HTTPS); a URL with a single image is polled, other HTTP content still goes to ffmpeg",
+        "de": "HTTP-MJPEG-Streams (z. B. Mobotix faststream) werden direkt ohne ffmpeg gelesen (weniger CPU, Anmeldung Basic/Digest, HTTPS); eine Adresse mit Einzelbild wird abgefragt, andere HTTP-Inhalte gehen weiter an ffmpeg"
+      },
       "0.3.1": {
         "en": "Installs on Node.js 20 again: werift pinned to 0.24.4 (0.25 needs Node.js 22)",
         "de": "Installation auf Node.js 20 wieder möglich: werift auf 0.24.4 festgelegt (0.25 braucht Node.js 22)"
