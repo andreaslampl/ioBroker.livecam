@@ -28,6 +28,15 @@ existing cameras adapter lost its images after a while and needed restarts.
   (no PBX): INVITE/100/180/200 (+retransmit until ACK), CANCEL->487, BYE both ways,
   only `intercomHost` may call (403 otherwise).
 - `lib/sdp.js` – G.711 (caller's preference order) + telephone-event; video m-lines declined.
+- Calls from inside (0.4.0, owner wanted to test volume / talk without waiting for a ring): `OutCall` in sip.js
+  (`SipServer.invite()`: INVITE with timer A/B, 1xx stops resending, 2xx -> ACK to the Contact (also for retransmits;
+  after a local hangup ACK + BYE), >= 300 -> ACK in the INVITE transaction + `failStatus`, hangup = CANCEL before the
+  answer, else BYE); responses routed by Call-ID before the BYE bookkeeping. `sdp.buildOffer()` (PCMU, PCMA, DTMF 101).
+  `Intercom.dial(ws, sdp, station)` (ws `{type:'dial'}`): session `outgoing`, state `calling`; the browser's offer
+  waits until the station answers, then `_browserAudio()` (shared with answer) uses the station's codec. No 'ring',
+  no callEnd/history for own calls. State message carries `outgoing` and `stations` [{index, name}]; station
+  `sipPort` (tests). Station must auto-answer (2N: incoming calls answered automatically). Tests with a fake
+  answering station; not yet tried with the real 2N.
 - `lib/intercom.js` – bridges intercom RTP <-> browser WebRTC (werift) without transcoding; several
   stations (`stations`: name, host, camera, door) - the main one from the old single fields plus the
   `intercoms` table (e.g. Mobotix T25/T26); station picked by the caller's IP, state/ring carry its

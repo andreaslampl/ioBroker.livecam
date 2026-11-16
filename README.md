@@ -185,6 +185,18 @@ stehen in den Objekten unter `livecam.0.cameras`.
 
 MicroSIP kann parallel weiter als zweites Ziel eingetragen bleiben, bis alles läuft.
 
+### Von innen zur Sprechstelle anrufen
+
+SmartView (Menü ⚙ → „📞 … anrufen“) kann die Sprechstelle auch **selbst anrufen**, z. B. um mit
+jemandem draußen zu sprechen oder Lautsprecher und Mikrofon zu testen. livecam ruft dafür
+`sip:door@<IP der Sprechstelle>:5060` direkt an (ohne SIP-Server); der Anruf erscheint nicht in der
+Anrufliste. Die Sprechstelle muss **eingehende Direktrufe annehmen**:
+
+- **2N IP Verso:** *Dienste → Telefon → Anrufe:* eingehende Anrufe **automatisch annehmen**
+  (sonst klingelt es nur draußen und jemand müsste dort abheben). Bei Direktrufen muss die
+  Absender-IP erlaubt sein, falls dort eine Liste gepflegt ist.
+- **Mobotix:** eingehende SIP-Anrufe annehmen (automatische Annahme in den Telefon-Einstellungen).
+
 ### Klingeltöne anhören und auswählen
 
 Die Seite **`http://<ioBroker-IP>:8095/tones`** (Adresse auch im Datenpunkt `info.tonesUrl`) zeigt
@@ -240,7 +252,7 @@ Wichtig ist `allow="microphone; autoplay"`, sonst blockiert der Browser Mikrofon
 im eingebetteten Fenster. Die fertige Adresse steht auch im Datenpunkt `livecam.0.info.viewUrl`.
 
 **Netzwerk:** Der ioBroker-Server braucht eingehend **UDP 5060** (SIP) und freie UDP-Ports für
-den Ton. In einem normalen Heimnetz ohne Firewall auf dem Server ist nichts zu tun.
+den Ton; für Anrufe von innen ausgehend UDP 5060 zur Sprechstelle. In einem normalen Heimnetz ohne Firewall auf dem Server ist nichts zu tun.
 
 ## Datenpunkte
 

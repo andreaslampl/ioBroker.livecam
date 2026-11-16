@@ -106,7 +106,7 @@ async function fakeBrowser(port) {
         }
     });
     await opened;
-    b.answer = async (direction = 'sendrecv') => {
+    b.answer = async (direction = 'sendrecv', extra = { type: 'answer' }) => {
         b.pc = new werift.RTCPeerConnection({
             codecs: {
                 audio: [
@@ -121,8 +121,9 @@ async function fakeBrowser(port) {
         b.pc.onTrack.subscribe(t => t.onReceiveRtp.subscribe(() => b.received++));
         await b.pc.setLocalDescription(await b.pc.createOffer());
         await until(() => b.pc.iceGatheringState === 'complete', 5000).catch(() => {});
-        ws.send(JSON.stringify({ type: 'answer', sdp: b.pc.localDescription.sdp }));
+        ws.send(JSON.stringify({ ...extra, sdp: b.pc.localDescription.sdp }));
     };
+    b.dial = station => b.answer('sendrecv', { type: 'dial', station });
     b.speak = async count => {
         const sender = b.pc.getTransceivers()[0].sender;
         const pt = sender.codec ? sender.codec.payloadType : 8;
@@ -210,6 +211,121 @@ test('call: ring, answer in the browser, audio both ways, door code, hang up', a
     assert.equal(intercom.results.length, 1);
     assert.equal(intercom.results[0].result, 'answered');
     assert.equal(intercom.results[0].caller, 'Haustuer');
+});
+
+/** Fake door station that is called by us: answers INVITE with 100/180/200 (PCMA + DTMF), ACK/BYE, CANCEL -> 487. */
+async function fakeStation({ answer = true, status = 200 } = {}) {
+    const sip = dgram.createSocket('udp4');
+    const rtp = dgram.createSocket('udp4');
+    await new Promise(r => sip.bind(0, '127.0.0.1', r));
+    await new Promise(r => rtp.bind(0, '127.0.0.1', r));
+    const st = { requests: [], audio: [], port: sip.address().port, toTag: 'tagstation' };
+    const reply = (msg, code, reason, rinfo, extra = [], body = '') => sip.send([
+        `SIP/2.0 ${code} ${reason}`, ...msg.headers.via.map(v => `Via: ${v}`), `From: ${msg.header('from')}`,
+        `To: ${msg.header('to')}${code > 100 && !/tag=/.test(msg.header('to')) ? `;tag=${st.toTag}` : ''}`,
+        `Call-ID: ${msg.header('call-id')}`, `CSeq: ${msg.header('cseq')}`, ...extra, `Content-Length: ${Buffer.byteLength(body)}`, '', body,
+    ].join('\r\n'), rinfo.port, rinfo.address);
+    sip.on('message', (buf, rinfo) => {
+        const msg = parseMessage(buf);
+        if (msg.status) {
+            return;
+        }
+        st.requests.push(msg);
+        if (msg.method === 'INVITE' && st.requests.filter(r => r.method === 'INVITE').length === 1) {
+            st.invite = msg;
+            st.rinfo = rinfo;
+            reply(msg, 100, 'Trying', rinfo);
+            reply(msg, 180, 'Ringing', rinfo);
+            if (!answer) {
+                return;
+            }
+            if (status !== 200) {
+                reply(msg, status, 'Busy Here', rinfo);
+                return;
+            }
+            const sdp = ['v=0', 'o=2N 1 1 IN IP4 127.0.0.1', 's=2N', 'c=IN IP4 127.0.0.1', 't=0 0', `m=audio ${rtp.address().port} RTP/AVP 8 101`,
+                'a=rtpmap:8 PCMA/8000', 'a=rtpmap:101 telephone-event/8000', 'a=fmtp:101 0-15', ''].join('\r\n');
+            setTimeout(() => reply(msg, 200, 'OK', rinfo, [`Contact: <sip:verso@127.0.0.1:${st.port}>`, 'Content-Type: application/sdp'], sdp), 100);
+        } else if (msg.method === 'CANCEL') {
+            reply(msg, 200, 'OK', rinfo);
+            reply(st.invite, 487, 'Request Terminated', rinfo);
+        } else if (msg.method === 'BYE') {
+            reply(msg, 200, 'OK', rinfo);
+        }
+    });
+    rtp.on('message', buf => st.audio.push(werift.RtpPacket.deSerialize(buf)));
+    st.sendAudio = (count, port) => {
+        for (let i = 0; i < count; i++) {
+            const h = new werift.RtpHeader({ payloadType: 8, sequenceNumber: i, timestamp: i * 160, ssrc: 99 });
+            rtp.send(new werift.RtpPacket(h, Buffer.alloc(160, 0xd5)).serialize(), port, '127.0.0.1');
+        }
+    };
+    st.close = () => {
+        sip.close();
+        rtp.close();
+    };
+    return st;
+}
+
+async function setupStation(t, opts) {
+    const st = await fakeStation(opts);
+    t.after(() => st.close());
+    const intercom = new Intercom({ sipPort: 0, stations: [{ name: 'Haustür', host: '127.0.0.1', camera: 'haustuer', sipPort: st.port }], log: quietLog });
+    await intercom.start();
+    intercom.results = [];
+    intercom.on('callEnd', e => intercom.results.push(e));
+    const server = http.createServer();
+    intercom.attach(server);
+    await new Promise(r => server.listen(0, '127.0.0.1', r));
+    t.after(async () => {
+        await intercom.stop();
+        server.closeAllConnections();
+        await new Promise(r => server.close(r));
+    });
+    const b = await fakeBrowser(server.address().port);
+    t.after(() => b.close());
+    await until(() => b.state);
+    return { intercom, st, b };
+}
+
+test('call from inside: browser dials the station, it answers, audio both ways, hang up = BYE, not in the call list', async t => {
+    const { intercom, st, b } = await setupStation(t);
+    assert.deepEqual(b.state.stations, [{ index: 0, name: 'Haustür' }]);
+    await b.dial(0);
+    await until(() => st.invite);
+    assert.match(st.invite.body, /m=audio \d+ RTP\/AVP 0 8 101/);
+    assert.equal(st.invite.uri, `sip:door@127.0.0.1:${st.port}`);
+    await until(() => st.requests.some(r => r.method === 'ACK'));
+    await until(() => b.state.state === 'active' && b.state.mine && b.state.outgoing);
+    await until(() => b.pc.connectionState === 'connected', 10000);
+    // station -> browser and browser -> station (PCMA as the station chose)
+    const rtpPort = Number(/m=audio (\d+)/.exec(st.invite.body)[1]);
+    st.sendAudio(30, rtpPort);
+    await until(() => b.received >= 20, 10000);
+    await b.speak(30);
+    await until(() => st.audio.length >= 20, 10000);
+    assert.ok(st.audio.every(p => p.header.payloadType === 8));
+    b.send({ type: 'hangup' });
+    await until(() => st.requests.some(r => r.method === 'BYE'));
+    const bye = st.requests.find(r => r.method === 'BYE');
+    assert.match(bye.header('to'), /tag=tagstation/);
+    await until(() => b.state.state === 'idle');
+    assert.equal(intercom.results.length, 0, 'own calls are no visitors');
+});
+
+test('call from inside: hang up while it rings = CANCEL; refused call = error message', async t => {
+    const { st, b } = await setupStation(t, { answer: false });
+    await b.dial(0);
+    await until(() => b.state.state === 'calling' && b.state.mine);
+    b.send({ type: 'hangup' });
+    await until(() => st.requests.some(r => r.method === 'CANCEL'));
+    await until(() => b.state.state === 'idle');
+    await until(() => st.requests.some(r => r.method === 'ACK'), 3000); // ACK for the 487
+
+    const busy = await setupStation(t, { status: 486 });
+    await busy.b.dial(0);
+    await until(() => busy.b.error && busy.b.state.state === 'idle');
+    assert.match(busy.b.error, /nicht angenommen \(486\)/);
 });
 
 test('answer without microphone: listen only, door still works', async t => {
