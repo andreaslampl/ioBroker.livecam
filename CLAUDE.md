@@ -37,6 +37,10 @@ existing cameras adapter lost its images after a while and needed restarts.
   no callEnd/history for own calls. State message carries `outgoing` and `stations` [{index, name}]; station
   `sipPort` (tests). Station must auto-answer (2N: incoming calls answered automatically). Tests with a fake
   answering station; not yet tried with the real 2N.
+- 0.4.1 field: no audio in either direction from SmartView (iPhone and Debian kiosk), cause unknown -> info log per call:
+  browser's ICE candidates (`Intercom.candidates()`, mDNS names marked), ioBroker's own candidates + station address/codec,
+  "Ton-Verbindung zum Browser steht / fehlgeschlagen", and after the call `Ton-Statistik` (packets station->ioBroker,
+  ->browser, browser->ioBroker, ->station) with hints. Headless Chromium offers only a .local candidate even with mic.
 - `lib/intercom.js` – bridges intercom RTP <-> browser WebRTC (werift) without transcoding; several
   stations (`stations`: name, host, camera, door) - the main one from the old single fields plus the
   `intercoms` table (e.g. Mobotix T25/T26); station picked by the caller's IP, state/ring carry its

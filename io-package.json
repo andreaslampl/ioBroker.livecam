@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "news": {
+      "0.4.1": {
+        "en": "Intercom diagnosis in the log: audio addresses of browser and ioBroker, connection state, packets per direction after each call",
+        "de": "Sprechanlage-Diagnose im Log: Ton-Adressen von Browser und ioBroker, Verbindungsstatus, Pakete je Richtung nach jedem Gespräch"
+      },
       "0.4.0": {
         "en": "Intercom: call a door station from inside (from SmartView), e.g. to talk or to test speaker and microphone",
         "de": "Sprechanlage: Sprechstelle von innen anrufen (aus SmartView), z. B. zum Sprechen oder um Lautsprecher und Mikrofon zu testen"
