@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "news": {
+      "0.7.0": {
+        "en": "Optional link to the Andreas L.-Arts VMS: camera type VMS (RTSP or MJPEG through the VMS), take over all VMS cameras, events / objects / plates as data points, record mode and camera on/off, ring of the door station reported to the VMS",
+        "de": "Optionale Anbindung an die Andreas L.-Arts VMS: Kameratyp VMS (RTSP oder MJPEG über die VMS), alle VMS-Kameras übernehmen, Ereignisse / Objekte / Kennzeichen als Datenpunkte, Aufnahme-Modus und Kamera an/aus, Klingeln der Türsprechstelle an die VMS"
+      },
       "0.6.0": {
         "en": "Number plates of own vehicles (list in the settings): camera column 'Plates', states plates.<name>.* and cameras.<name>.detect.plate*; unknown plates are never stored",
         "de": "Kennzeichen der eigenen Fahrzeuge (Liste in den Einstellungen): Spalte „Kennzeichen“, Datenpunkte plates.<Name>.* und cameras.<Name>.detect.plate*; fremde Kennzeichen werden nie gespeichert"
@@ -123,7 +127,8 @@
       {
         "admin": ">=6.0.0"
       }
-    ]
+    ],
+    "messagebox": true
   },
   "native": {
     "port": 8095,
@@ -149,14 +154,22 @@
     "intercoms": [],
     "detectScore": 55,
     "detectHold": 20,
-    "detectInterval": 1
+    "detectInterval": 1,
+    "vmsUrl": "",
+    "vmsKey": "",
+    "vmsImport": false,
+    "vmsEvents": true,
+    "vmsRing": false,
+    "vmsRingCamera": "",
+    "vmsFps": 5
   },
   "protectedNative": [
-    "cameras",
     "accessKey",
-    "intercomPassword",
+    "cameras",
     "doorCode",
-    "intercoms"
+    "intercomPassword",
+    "intercoms",
+    "vmsKey"
   ],
   "objects": [],
   "instanceObjects": [
@@ -457,6 +470,7 @@
     }
   ],
   "encryptedNative": [
-    "intercomPassword"
+    "intercomPassword",
+    "vmsKey"
   ]
 }

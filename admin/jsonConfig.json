@@ -49,8 +49,21 @@
                 {
                   "label": "Snapshot (JPEG)",
                   "value": "snapshot"
+                },
+                {
+                  "label": "VMS (Andreas L.-Arts)",
+                  "value": "vms"
                 }
               ]
+            },
+            {
+              "type": "autocompleteSendTo",
+              "attr": "vmsCamera",
+              "title": "VMS camera",
+              "width": "9%",
+              "command": "vmsCameras",
+              "default": "",
+              "hidden": "data.type !== 'vms'"
             },
             {
               "type": "text",
@@ -246,6 +259,87 @@
           "default": false,
           "xs": 12,
           "sm": 6
+        }
+      }
+    },
+    "tabVms": {
+      "type": "panel",
+      "label": "VMS",
+      "items": {
+        "vmsHelp": {
+          "type": "staticText",
+          "text": "Optional: link to the Andreas L.-Arts VMS. Without an address nothing changes. Create the API key in the VMS under Settings -> Interface. Live pictures come through the VMS (RTSP if released there, else MJPEG), so every camera has only one connection - to the VMS.",
+          "xs": 12
+        },
+        "vmsUrl": {
+          "type": "text",
+          "label": "VMS address",
+          "help": "e.g. http://192.168.1.10:8080",
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        },
+        "vmsKey": {
+          "type": "password",
+          "label": "API key (alvms_…)",
+          "xs": 12,
+          "sm": 6,
+          "md": 4,
+          "repeat": false,
+          "visible": true
+        },
+        "vmsImport": {
+          "type": "checkbox",
+          "label": "Take over the cameras of the VMS",
+          "help": "all VMS cameras appear in livecam without a row in the camera table",
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        },
+        "vmsFps": {
+          "type": "number",
+          "label": "Pictures per second (taken over cameras)",
+          "min": 0.2,
+          "max": 25,
+          "default": 5,
+          "xs": 12,
+          "sm": 6,
+          "md": 3,
+          "hidden": "!data.vmsImport"
+        },
+        "vmsEvents": {
+          "type": "checkbox",
+          "label": "Events as data points",
+          "help": "vms.cameras.<camera>.* (online, recording, person, car …, last event, plates, record mode, on/off)",
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        },
+        "vmsRing": {
+          "type": "checkbox",
+          "label": "Report ringing to the VMS",
+          "help": "when the 2N rings: photo, recording and push in the VMS",
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 4
+        },
+        "vmsRingCamera": {
+          "type": "autocompleteSendTo",
+          "label": "VMS camera of the door",
+          "command": "vmsCameras",
+          "help": "empty = the VMS camera behind the intercom camera, else the one with the IP of the 2N",
+          "xs": 12,
+          "sm": 6,
+          "md": 4,
+          "hidden": "!data.vmsRing"
+        },
+        "vmsList": {
+          "type": "staticText",
+          "text": "The camera lists show the cameras of the VMS once address and key are saved.",
+          "xs": 12
         }
       }
     },

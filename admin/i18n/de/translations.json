@@ -94,5 +94,22 @@
   "Plate (e.g. KL-482BX)": "Kennzeichen (z. B. KL-482BX)",
   "Name (e.g. ID.4)": "Name (z. B. ID.4)",
   "Report unknown vehicles": "Unbekannte Fahrzeuge melden",
-  "detect.plate = 'unbekannt' (without the plate text)": "detect.plate = „unbekannt“ (ohne das Kennzeichen selbst)"
+  "detect.plate = 'unbekannt' (without the plate text)": "detect.plate = „unbekannt“ (ohne das Kennzeichen selbst)",
+  "VMS (Andreas L.-Arts)": "VMS (Andreas L.-Arts)",
+  "VMS camera": "VMS-Kamera",
+  "VMS": "VMS",
+  "Optional: link to the Andreas L.-Arts VMS. Without an address nothing changes. Create the API key in the VMS under Settings -> Interface. Live pictures come through the VMS (RTSP if released there, else MJPEG), so every camera has only one connection - to the VMS.": "Optional: Anbindung an die Andreas L.-Arts VMS. Ohne Adresse ändert sich nichts. Den API-Schlüssel in der VMS unter Einstellungen → Schnittstelle erstellen. Livebilder kommen über die VMS (RTSP, wenn dort freigegeben, sonst MJPEG) – jede Kamera hat so nur eine Verbindung, nämlich zur VMS.",
+  "VMS address": "VMS-Adresse",
+  "e.g. http://192.168.1.10:8080": "z. B. http://192.168.1.10:8080",
+  "API key (alvms_…)": "API-Schlüssel (alvms_…)",
+  "Take over the cameras of the VMS": "Kameras von der VMS übernehmen",
+  "all VMS cameras appear in livecam without a row in the camera table": "alle VMS-Kameras erscheinen in livecam, ohne Zeile in der Kameratabelle",
+  "Pictures per second (taken over cameras)": "Bilder pro Sekunde (übernommene Kameras)",
+  "Events as data points": "Ereignisse als Datenpunkte",
+  "vms.cameras.<camera>.* (online, recording, person, car …, last event, plates, record mode, on/off)": "vms.cameras.<Kamera>.* (online, Aufnahme, Person, Auto …, letztes Ereignis, Kennzeichen, Aufnahme-Modus, an/aus)",
+  "Report ringing to the VMS": "Klingeln an die VMS melden",
+  "when the 2N rings: photo, recording and push in the VMS": "wenn die 2N klingelt: Foto, Aufnahme und Push in der VMS",
+  "VMS camera of the door": "VMS-Kamera der Tür",
+  "empty = the VMS camera behind the intercom camera, else the one with the IP of the 2N": "leer = die VMS-Kamera hinter der Sprechstellen-Kamera, sonst die mit der IP der 2N",
+  "The camera lists show the cameras of the VMS once address and key are saved.": "Die Auswahllisten zeigen die VMS-Kameras, sobald Adresse und Schlüssel gespeichert sind (Adapter läuft)."
 }

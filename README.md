@@ -332,6 +332,45 @@ weder gespeichert noch ins Log geschrieben. Mit „Unbekannte Fahrzeuge melden�
 | `plates.<Fahrzeug>.present` | `true`, solange dieses Fahrzeug an einer Kamera steht |
 | `plates.<Fahrzeug>.lastSeen`, `.camera` | wann und wo zuletzt gesehen |
 
+## Optional: Anbindung an die Andreas L.-Arts VMS
+
+livecam läuft weiter eigenständig wie bisher. Nur wenn im Reiter **„VMS“** eine Adresse **und** ein API-Schlüssel
+eingetragen sind, kommen Kameras, Livebilder, Ereignisse, Kennzeichen und Schalter zusätzlich von der VMS. Kamerawand,
+Türsprechstelle und Anrufliste bleiben unverändert.
+
+**Einrichten**
+1. In der VMS unter *Einstellungen → Schnittstelle* einen Schlüssel erstellen (`alvms_…`). Für das beste Livebild dort
+   auch die **RTSP-Freigabe** einschalten und den Port in der Windows-Firewall freigeben.
+2. livecam, Reiter „VMS“: Adresse (z. B. `http://192.168.1.10:8080`) und Schlüssel eintragen, speichern.
+3. Kameras: entweder **„Kameras von der VMS übernehmen“** ankreuzen, dann erscheinen alle VMS-Kameras ohne eigenen
+   Tabelleneintrag. Oder in der Kameratabelle **Typ „VMS“** wählen und in der Spalte **„VMS-Kamera“** die Kamera aussuchen.
+   Die Liste füllt sich, sobald Adresse und Schlüssel gespeichert sind. Für eine Kamera aus der Tabelle gelten auch die
+   Spalten KI-Erkennung und Kennzeichen von livecam.
+
+**Livebild:** über RTSP der VMS (Unterstream), wenn die Freigabe an ist, sonst als MJPEG von der VMS. Jede Kamera hat so
+nur eine Verbindung, nämlich die zur VMS.
+
+**Datenpunkte** (Haken „Ereignisse als Datenpunkte“) unter `vms.`:
+
+| Datenpunkt | Bedeutung |
+| --- | --- |
+| `vms.connection` | Live-Kanal zur VMS steht |
+| `vms.cameras.<Kamera>.online`, `.recording`, `.motion` | Zustand der Kamera in der VMS |
+| `.person`, `.car`, `.animal`, `.motorcycle`, `.bicycle`, `.truck` | `true`, solange die VMS das erkennt |
+| `.lastEvent` (JSON), `.lastEventKind`, `.lastEventTime` | letztes Ereignis |
+| `.lastEventImage` | Foto des Ereignisses, signierter Link, funktioniert ohne Schlüssel (z. B. für Telegram) |
+| `.lastPlate`, `.lastPlateName`, `.lastPlateKind` | Kennzeichen aus den Listen der VMS (`known` / `alarm`); fremde Kennzeichen nur als `unknown`, ohne Text |
+| `.recordMode` | **schaltbar**: `off` / `continuous` / `motion` / `ai` |
+| `.enabled` | **schaltbar**: Kamera in der VMS an/aus |
+| `vms.lastEvent` | letztes Ereignis aller Kameras (JSON) |
+
+**Klingeln an die VMS** (Haken „Klingeln an die VMS melden“): Wenn die 2N klingelt, meldet livecam das der VMS. Die VMS
+macht Foto und Aufnahme und schickt Push. Welche VMS-Kamera gilt: die eingestellte, sonst die VMS-Kamera hinter der
+Sprechstellen-Kamera, sonst die VMS-Kamera mit der IP der 2N.
+
+**Wenn die VMS nicht erreichbar ist:** livecam läuft normal weiter, `vms.connection` = false. Der Adapter verbindet
+sich mit wachsender Wartezeit neu (2 s bis 60 s). Übernommene Kameras bleiben mit der zuletzt bekannten Liste angelegt.
+
 ## Datenpunkte
 
 | Datenpunkt | Bedeutung |

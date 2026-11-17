@@ -77,6 +77,19 @@ existing cameras adapter lost its images after a while and needed restarts.
   PRIVACY: readings not on the list are never stored or logged (only "unbekannt" with plateUnknown) - keep it that way.
   Tests: unit + real models on `test/fixtures/plate-scene.jpg` (self-made drawing); e2e in the scratchpad (lpr/e2e.js,
   bus photo with a pasted synthetic plate, not committed). Synthetic plates read 100 %; not yet on the owner's cameras.
+- Optional VMS link (0.7.0, owner's own "Andreas L.-Arts VMS", API.md + ADAPTER-AUFTRAG.md on the owner's PC, pasted
+  into the session): `lib/vms.js` `VmsClient` (Bearer key; /api/integration cached 60 s; /api/cameras; PUT
+  /api/cameras/<id>; POST /api/events/external; SSE /api/stream with ping watchdog 45 s, backoff 2…60 s, `retry:`
+  honoured), `liveTarget()` = rtsp://user:pass@<vms host>:<port><rtsp.sub> when released, else MJPEG
+  <base><mjpeg.sub>&key=. Camera type `vms` (column `vmsCamera`, autocompleteSendTo 'vmsCameras' -> onMessage,
+  messagebox) -> CameraSource cfg.resolve (source._target handles http/snapshot/ffmpeg like stream). main
+  `prepareVms()` before the camera loop (list cached in vms-cameras.json for starts without VMS; `vmsImport` appends
+  cameras not in the table), `startVms()` (vms.connection, vms.lastEvent, vms.cameras.<slug>.* incl. writable
+  recordMode/enabled -> `vmsWrite()`), `onVmsMessage()` (state -> online/recording/motion/kinds; event/plate ->
+  lastEvent* with full URLs; plate text only for plate_kind known/alarm, else '' + 'unknown' and stripped from the JSON),
+  `vmsRing()` on intercom 'ring' (setting > VMS id of the ring camera > VMS camera whose JSON contains the station IP).
+  Key: encryptedNative + protectedNative, `key=` redacted in source/watch logs. Nothing created without url + key.
+  Tests: `startFakeVms()` in test/helpers.js, test/vms.test.js. Not yet against the real VMS.
 - `lib/intercom.js` – bridges intercom RTP <-> browser WebRTC (werift) without transcoding; several
   stations (`stations`: name, host, camera, door) - the main one from the old single fields plus the
   `intercoms` table (e.g. Mobotix T25/T26); station picked by the caller's IP, state/ring carry its

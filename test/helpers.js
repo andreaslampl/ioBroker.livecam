@@ -148,4 +148,125 @@ const until = async (cond, ms = 15000) => {
     }
 };
 
-module.exports = { testFrames, hasFfmpeg, startFakeCamera, readMjpeg, quietLog, until };
+/**
+ * Simulated Andreas L.-Arts VMS (API.md): /api/integration, /api/state, /api/cameras (GET/PUT), /api/events/external,
+ * /api/stream (SSE: retry + one state per camera on connect, `vms.push(event, data)`), go2rtc MJPEG / frame with ?key=.
+ */
+async function startFakeVms({ key = 'alvms_test', rtsp = false } = {}) {
+    const frames = testFrames();
+    const vms = { requests: [], puts: [], external: [], clients: new Set(), rtsp, connects: 0 };
+    vms.cameras = [
+        { id: 'haustuere', name: 'Haustüre', enabled: true, host: '192.168.1.120', record: { mode: 'ai' } },
+        { id: 'einfahrt', name: 'Einfahrt', enabled: true, host: '192.168.1.121', record: { mode: 'motion' } },
+    ];
+    const state = id => ({ name: vms.cameras.find(c => c.id === id).name, enabled: true, online: true, recording: true, motion: false, objects: [] });
+    const json = (res, code, body) => {
+        res.writeHead(code, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(body));
+    };
+    const server = http.createServer((req, res) => {
+        const u = new URL(req.url, 'http://x');
+        vms.requests.push(`${req.method} ${u.pathname}`);
+        const auth = req.headers.authorization === `Bearer ${key}` || req.headers['x-api-key'] === key || u.searchParams.get('key') === key;
+        if (u.pathname.startsWith('/go2rtc/')) {
+            if (!auth) {
+                res.writeHead(401);
+                return res.end();
+            }
+            if (u.pathname.endsWith('stream.mjpeg')) {
+                res.writeHead(200, { 'Content-Type': 'multipart/x-mixed-replace; boundary=frame' });
+                let i = 0;
+                const timer = setInterval(() => {
+                    const f = frames[i++ % frames.length];
+                    res.write(`--frame\r\nContent-Type: image/jpeg\r\nContent-Length: ${f.length}\r\n\r\n`);
+                    res.write(f);
+                    res.write('\r\n');
+                }, 100);
+                res.on('close', () => clearInterval(timer));
+                return;
+            }
+            res.writeHead(200, { 'Content-Type': 'image/jpeg' });
+            return res.end(frames[0]);
+        }
+        if (!auth) {
+            return json(res, 401, { error: 'unauthorized' });
+        }
+        const body = () => new Promise(r => {
+            const c = [];
+            req.on('data', d => c.push(d));
+            req.on('end', () => r(c.length ? JSON.parse(Buffer.concat(c).toString()) : null));
+        });
+        if (u.pathname === '/api/integration') {
+            return json(res, 200, {
+                app: 'Andreas L.-Arts VMS',
+                version: '0.1.0',
+                rtsp: { enabled: vms.rtsp, port: 8554, username: 'alvms', password: 'p@ss/1' },
+                cameras: vms.cameras.map(c => ({
+                    id: c.id,
+                    name: c.name,
+                    enabled: c.enabled,
+                    streams: { main: c.id, sub: `${c.id}_sub` },
+                    mjpeg: { main: `/go2rtc/api/stream.mjpeg?src=${c.id}`, sub: `/go2rtc/api/stream.mjpeg?src=${c.id}_sub` },
+                    snapshot: `/go2rtc/api/frame.jpeg?src=${c.id}`,
+                    rtsp: { main: `/${c.id}`, sub: `/${c.id}_sub` },
+                })),
+                kinds: { person: 'Person', car: 'Auto' },
+                endpoints: { state: '/api/state', stream: '/api/stream', events: '/api/events', external: '/api/events/external' },
+            });
+        }
+        if (u.pathname === '/api/cameras' && req.method === 'GET') {
+            return json(res, 200, vms.cameras);
+        }
+        const cm = /^\/api\/cameras\/([^/]+)$/.exec(u.pathname);
+        if (cm && req.method === 'PUT') {
+            return body().then(b => {
+                const cam = vms.cameras.find(c => c.id === decodeURIComponent(cm[1]));
+                if (!cam) {
+                    return json(res, 404, { error: 'not found' });
+                }
+                vms.puts.push({ id: cam.id, body: b });
+                Object.assign(cam, b.enabled === undefined ? {} : { enabled: b.enabled }, b.record ? { record: { ...cam.record, ...b.record } } : {});
+                json(res, 200, cam);
+            });
+        }
+        if (u.pathname === '/api/events/external' && req.method === 'POST') {
+            return body().then(b => {
+                vms.external.push(b);
+                json(res, 200, { ok: true, id: 100 + vms.external.length });
+            });
+        }
+        if (u.pathname === '/api/stream') {
+            vms.connects++;
+            res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
+            res.write('retry: 3000\n\n: hallo\n\n');
+            for (const c of vms.cameras) {
+                res.write(`event: state\ndata: ${JSON.stringify({ camera: c.id, ...state(c.id) })}\n\n`);
+            }
+            vms.clients.add(res);
+            res.on('close', () => vms.clients.delete(res));
+            return;
+        }
+        json(res, 404, { error: 'not found' });
+    });
+    await new Promise(r => server.listen(0, '127.0.0.1', r));
+    vms.port = server.address().port;
+    vms.url = `http://127.0.0.1:${vms.port}`;
+    vms.key = key;
+    vms.push = (event, data) => {
+        for (const c of vms.clients) {
+            c.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+        }
+    };
+    vms.dropStreams = () => {
+        for (const c of vms.clients) {
+            c.destroy();
+        }
+    };
+    vms.close = () => {
+        server.closeAllConnections();
+        return new Promise(r => server.close(r));
+    };
+    return vms;
+}
+
+module.exports = { testFrames, hasFfmpeg, startFakeCamera, startFakeVms, readMjpeg, quietLog, until };

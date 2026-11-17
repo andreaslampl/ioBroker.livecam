@@ -12,6 +12,7 @@ const { TONE_LABELS } = require('./lib/tones');
 const { Detector, parseZones, GROUPS, SIZE } = require('./lib/detect');
 const { Watcher, jpegSize } = require('./lib/watch');
 const { PlateReader, parseKnown, match: matchPlate } = require('./lib/plates');
+const { VmsClient, normalizeBase } = require('./lib/vms');
 const fs = require('node:fs');
 
 function localAddress() {
@@ -25,6 +26,11 @@ function localAddress() {
     return '127.0.0.1';
 }
 
+/** object kinds of the VMS that get their own data point */
+const VMS_KINDS = ['person', 'car', 'animal', 'motorcycle', 'bicycle', 'truck'];
+const VMS_KIND_DE = { person: 'Person', car: 'Auto', animal: 'Tier', motorcycle: 'Motorrad', bicycle: 'Fahrrad', truck: 'LKW' };
+const VMS_MODES = ['off', 'continuous', 'motion', 'ai'];
+
 class Livecam extends utils.Adapter {
     constructor(options) {
         super({ ...options, name: 'livecam' });
@@ -35,7 +41,9 @@ class Livecam extends utils.Adapter {
         this.on('ready', this.onReady.bind(this));
         this.on('unload', this.onUnload.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
+        this.on('message', this.onMessage.bind(this));
         this.intercom = null;
+        this.vms = null;
     }
 
     async onReady() {
@@ -46,10 +54,12 @@ class Livecam extends utils.Adapter {
         const query = key ? `?key=${encodeURIComponent(key)}` : '';
         const base = `http://${host}:${port}`;
 
-        const cams = Array.isArray(this.config.cameras) ? this.config.cameras : [];
+        const cams = Array.isArray(this.config.cameras) ? [...this.config.cameras] : [];
         const used = new Set();
         const detectCams = [];
         this.urlBase = { base, query };
+        // optional: cameras of the Andreas L.-Arts VMS (nothing changes without an address + key)
+        await this.prepareVms(cams);
         for (const [i, cam] of cams.entries()) {
             if (cam.enabled === false) {
                 continue;
@@ -64,12 +74,15 @@ class Livecam extends utils.Adapter {
                 this.log.error(`Camera "${cam.name || id}": ${problem}`);
                 continue;
             }
+            const vmsId = cam.type === 'vms' ? String(cam.vmsCamera || '').trim() : '';
             const source = new CameraSource(
                 {
                     id,
                     name: cam.name || id,
                     type: cam.type || 'stream',
-                    url: completeUrl(cam.type || 'stream', cam.url, cam.host),
+                    vmsId,
+                    resolve: vmsId ? () => this.vms.live(vmsId) : undefined,
+                    url: vmsId ? '' : completeUrl(cam.type || 'stream', cam.url, cam.host),
                     // ONVIF has its own port column; drop a port typed into the IP field.
                     host: (cam.host || '').trim().replace(/:\d+$/, ''),
                     onvifPort: Number(cam.onvifPort) || 80,
@@ -130,6 +143,7 @@ class Livecam extends utils.Adapter {
             return;
         }
         await this.startDetection(detectCams);
+        await this.startVms();
         await this.setState('info.connection', true, true);
         await this.setState('info.viewUrl', `${base}/view${query}`, true);
         await this.setState('info.tonesUrl', `${base}/tones${query}`, true);
@@ -235,6 +249,305 @@ class Livecam extends utils.Adapter {
         for (const g of groups) {
             await this.setState(`cameras.${id}.detect.${g}`, false, true);
             await this.setState(`cameras.${id}.detect.${g}Count`, 0, true);
+        }
+    }
+
+    // ---------------- Andreas L.-Arts VMS (optional) ----------------
+
+    vmsCacheFile() {
+        try {
+            return path.join(this.dataDir || utils.getAbsoluteInstanceDataDir(this), 'vms-cameras.json');
+        } catch {
+            return '';
+        }
+    }
+
+    /**
+     * Before the cameras are created: client, camera list (cached for starts while the VMS is down) and the cameras
+     * taken over automatically ("Kameras von der VMS übernehmen") appended to `cams`.
+     */
+    async prepareVms(cams) {
+        const c = this.config;
+        const base = normalizeBase(c.vmsUrl);
+        const key = String(c.vmsKey || '').trim();
+        if (!base || !key) {
+            if (base || key) {
+                this.log.warn('VMS: Adresse und API-Schlüssel eintragen (Reiter „VMS“) – Anbindung bleibt aus');
+            }
+            return;
+        }
+        this.vms = new VmsClient({ base, key, log: this.log, timeout: 8000 });
+        const file = this.vmsCacheFile();
+        let list = null;
+        try {
+            const info = await this.vms.integration(true);
+            list = info.cameras.map(x => ({ id: x.id, name: x.name || x.id, enabled: x.enabled !== false }));
+            this.log.info(`VMS ${base}: ${list.length} Kamera(s), RTSP-Freigabe ${info.rtsp && info.rtsp.enabled ? 'an' : 'aus (Livebild als MJPEG)'}`);
+            if (file) {
+                fs.mkdirSync(path.dirname(file), { recursive: true });
+                fs.writeFileSync(file, JSON.stringify(list));
+            }
+        } catch (err) {
+            this.log.warn(`VMS ${base} beim Start nicht erreichbar (${err.message}) – livecam läuft trotzdem, Verbindung wird weiter versucht`);
+            try {
+                list = file ? JSON.parse(fs.readFileSync(file, 'utf8')) : null;
+            } catch {
+                list = null;
+            }
+        }
+        this.vmsList = Array.isArray(list) ? list : [];
+        if (!c.vmsImport) {
+            return;
+        }
+        const inTable = new Set(cams.filter(x => x.type === 'vms').map(x => String(x.vmsCamera || '').trim()));
+        let added = 0;
+        for (const v of this.vmsList) {
+            if (inTable.has(v.id)) {
+                continue;
+            }
+            cams.push({ enabled: true, name: v.name, type: 'vms', vmsCamera: v.id, fps: Number(c.vmsFps) || 5, width: 0, vmsAuto: true });
+            added++;
+        }
+        if (added) {
+            this.log.info(`VMS: ${added} Kamera(s) automatisch übernommen`);
+        }
+    }
+
+    /** VMS id -> object id part */
+    vmsSlug(id) {
+        return cameraId(id, 0);
+    }
+
+    async vmsCameraObjects(v) {
+        const slug = this.vmsSlug(v.id);
+        this.vmsIds = this.vmsIds || new Map();
+        if (this.vmsIds.has(slug)) {
+            return slug;
+        }
+        this.vmsIds.set(slug, v.id);
+        const pre = `vms.cameras.${slug}`;
+        await this.extendObject(pre, { type: 'channel', common: { name: v.name || v.id }, native: { vmsId: v.id } });
+        const ro = {
+            online: [{ en: 'Online', de: 'Online' }, 'boolean', 'indicator.reachable'],
+            recording: [{ en: 'Recording', de: 'Nimmt auf' }, 'boolean', 'indicator'],
+            motion: [{ en: 'Motion', de: 'Bewegung' }, 'boolean', 'sensor.motion'],
+            lastEvent: [{ en: 'Last event (JSON)', de: 'Letztes Ereignis (JSON)' }, 'string', 'json'],
+            lastEventKind: [{ en: 'Kind of the last event', de: 'Art des letzten Ereignisses' }, 'string', 'text'],
+            lastEventTime: [{ en: 'Time of the last event', de: 'Zeit des letzten Ereignisses' }, 'string', 'date'],
+            lastEventImage: [{ en: 'Photo of the last event (signed link, no key needed)', de: 'Foto des letzten Ereignisses (signierter Link, ohne Schlüssel)' }, 'string', 'url.cam'],
+            lastPlate: [{ en: 'Last plate (own list of the VMS only)', de: 'Letztes Kennzeichen (nur aus den Listen der VMS)' }, 'string', 'text'],
+            lastPlateName: [{ en: 'Name of the last plate', de: 'Name zum letzten Kennzeichen' }, 'string', 'text'],
+            lastPlateKind: [{ en: 'Kind of the last plate (known / alarm / unknown)', de: 'Art des letzten Kennzeichens (known / alarm / unknown)' }, 'string', 'text'],
+        };
+        for (const k of VMS_KINDS) {
+            ro[k] = [{ en: `${k} detected`, de: `${VMS_KIND_DE[k]} erkannt` }, 'boolean', k === 'person' ? 'sensor.motion' : 'indicator'];
+        }
+        for (const [key, [name, type, role]] of Object.entries(ro)) {
+            await this.extendObject(`${pre}.${key}`, { type: 'state', common: { name, type, role, read: true, write: false }, native: {} });
+        }
+        await this.extendObject(`${pre}.recordMode`, {
+            type: 'state',
+            common: {
+                name: { en: 'Recording mode (writes to the VMS)', de: 'Aufnahme-Modus (schaltet in der VMS)' },
+                type: 'string',
+                role: 'text',
+                read: true,
+                write: true,
+                states: { off: 'Aus', continuous: 'Dauernd', motion: 'Bei Bewegung', ai: 'Bei KI-Erkennung' },
+            },
+            native: {},
+        });
+        await this.extendObject(`${pre}.enabled`, {
+            type: 'state',
+            common: { name: { en: 'Camera on in the VMS (writes to the VMS)', de: 'Kamera in der VMS an (schaltet in der VMS)' }, type: 'boolean', role: 'switch.enable', read: true, write: true },
+            native: {},
+        });
+        return slug;
+    }
+
+    /** after the web server: data points, settings of the cameras, live channel */
+    async startVms() {
+        if (!this.vms) {
+            return;
+        }
+        const c = this.config;
+        await this.extendObject('vms', { type: 'channel', common: { name: 'Andreas L.-Arts VMS' }, native: {} });
+        await this.extendObject('vms.connection', {
+            type: 'state',
+            common: { name: { en: 'Connected to the VMS', de: 'Mit der VMS verbunden' }, type: 'boolean', role: 'indicator.connected', read: true, write: false },
+            native: {},
+        });
+        await this.setState('vms.connection', false, true);
+        if (!c.vmsEvents) {
+            return;
+        }
+        await this.extendObject('vms.lastEvent', {
+            type: 'state',
+            common: { name: { en: 'Last event of all cameras (JSON)', de: 'Letztes Ereignis aller Kameras (JSON)' }, type: 'string', role: 'json', read: true, write: false },
+            native: {},
+        });
+        await this.extendObject('vms.cameras', { type: 'channel', common: { name: { en: 'Cameras of the VMS', de: 'Kameras der VMS' } }, native: {} });
+        for (const v of this.vmsList || []) {
+            await this.vmsCameraObjects(v);
+        }
+        this.subscribeStates('vms.cameras.*.recordMode');
+        this.subscribeStates('vms.cameras.*.enabled');
+        this.vms.on('connection', (on, why) => {
+            this.setState('vms.connection', on, true);
+            if (on) {
+                this.log.info('VMS: Live-Kanal verbunden');
+                this.vmsSettings().catch(err => this.log.debug(`VMS: Einstellungen: ${err.message}`));
+            } else {
+                this.log.warn(`VMS: Live-Kanal getrennt (${why}) – neuer Versuch in ${Math.round(this.vms.backoff / 1000)} s`);
+            }
+        });
+        this.vms.on('message', (event, data) => this.onVmsMessage(event, data).catch(err => this.log.warn(`VMS: ${event}: ${err.message}`)));
+        this.vms.start();
+    }
+
+    /** record modes / enabled of the cameras (also for ones that are new in the VMS) */
+    async vmsSettings() {
+        const list = await this.vms.cameras();
+        const arr = Array.isArray(list) ? list : list && Array.isArray(list.cameras) ? list.cameras : [];
+        this.vmsCams = arr;
+        for (const cam of arr) {
+            if (!cam || !cam.id) {
+                continue;
+            }
+            const slug = await this.vmsCameraObjects(cam);
+            const mode = cam.record && cam.record.mode;
+            if (mode) {
+                await this.setState(`vms.cameras.${slug}.recordMode`, String(mode), true);
+            }
+            if (typeof cam.enabled === 'boolean') {
+                await this.setState(`vms.cameras.${slug}.enabled`, cam.enabled, true);
+            }
+        }
+    }
+
+    async onVmsMessage(event, d) {
+        if (!d || typeof d !== 'object' || !d.camera) {
+            return;
+        }
+        const slug = await this.vmsCameraObjects({ id: String(d.camera), name: d.camera_name || d.name || String(d.camera) });
+        const pre = `vms.cameras.${slug}`;
+        if (event === 'state') {
+            for (const k of ['online', 'recording', 'motion', 'enabled']) {
+                if (typeof d[k] === 'boolean') {
+                    await this.setState(`${pre}.${k}`, d[k], true);
+                }
+            }
+            const objects = Array.isArray(d.objects) ? d.objects : [];
+            for (const k of VMS_KINDS) {
+                await this.setState(`${pre}.${k}`, objects.includes(k), true);
+            }
+            return;
+        }
+        if (event !== 'event' && event !== 'plate') {
+            return;
+        }
+        const base = this.vms.base;
+        const full = u => (u && typeof u === 'string' ? (/^https?:/i.test(u) ? u : `${base}${u.startsWith('/') ? '' : '/'}${u}`) : '');
+        // plates: only those on a list of the VMS (known / alarm) as text - others stay unknown, like livecam's own reading
+        const listed = d.plate_kind === 'known' || d.plate_kind === 'alarm';
+        const ev = { ...d, image: full(d.image), playback: full(d.playback) };
+        if (d.plate && !listed) {
+            ev.plate = '';
+            ev.plate_name = null;
+        }
+        if (d.plate || event === 'plate') {
+            await this.setState(`${pre}.lastPlate`, listed ? String(d.plate || '') : '', true);
+            await this.setState(`${pre}.lastPlateName`, listed ? String(d.plate_name || '') : '', true);
+            await this.setState(`${pre}.lastPlateKind`, listed ? d.plate_kind : 'unknown', true);
+        }
+        if (event === 'plate') {
+            return;
+        }
+        const time = Number(d.start) > 0 ? new Date(Number(d.start) * 1000).toISOString() : new Date().toISOString();
+        const json = JSON.stringify(ev);
+        await this.setState(`${pre}.lastEvent`, json, true);
+        await this.setState(`${pre}.lastEventKind`, String(d.kind || ''), true);
+        await this.setState(`${pre}.lastEventTime`, time, true);
+        await this.setState(`${pre}.lastEventImage`, ev.image, true);
+        await this.setState('vms.lastEvent', json, true);
+    }
+
+    /** recordMode / enabled written in ioBroker -> PUT /api/cameras/<id> */
+    async vmsWrite(slug, key, val) {
+        const id = this.vmsIds && this.vmsIds.get(slug);
+        const back = async () => {
+            const st = await this.getStateAsync(`vms.cameras.${slug}.${key}`).catch(() => null);
+            await this.setState(`vms.cameras.${slug}.${key}`, st && st.ack ? st.val : null, true);
+        };
+        if (!this.vms || !id) {
+            return;
+        }
+        let body;
+        if (key === 'recordMode') {
+            const mode = String(val);
+            if (!VMS_MODES.includes(mode)) {
+                this.log.warn(`VMS: Aufnahme-Modus "${mode}" gibt es nicht (${VMS_MODES.join(', ')})`);
+                return;
+            }
+            body = { record: { mode } };
+        } else {
+            body = { enabled: val === true || val === 'true' || val === 1 };
+        }
+        try {
+            await this.vms.setCamera(id, body);
+            this.log.info(`VMS: ${id} ${key === 'recordMode' ? `Aufnahme-Modus ${body.record.mode}` : body.enabled ? 'eingeschaltet' : 'ausgeschaltet'}`);
+            await this.setState(`vms.cameras.${slug}.${key}`, key === 'recordMode' ? body.record.mode : body.enabled, true);
+        } catch (err) {
+            this.log.warn(`VMS: ${id} nicht geschaltet: ${err.message}`);
+            await back();
+        }
+    }
+
+    /**
+     * The door station rings: tell the VMS (photo, keeps the recording, push). VMS camera = setting, else the VMS
+     * camera behind the livecam camera of the station, else the VMS camera with the IP of the station.
+     */
+    async vmsRing(livecamCamera, stations) {
+        let target = String(this.config.vmsRingCamera || '').trim();
+        if (!target) {
+            const src = this.sources.get(livecamCamera);
+            target = (src && src.cfg.vmsId) || '';
+        }
+        if (!target) {
+            const st = (stations || []).find(x => x.camera === livecamCamera) || (stations || [])[0];
+            const ip = st && st.host;
+            if (ip) {
+                const list = this.vmsCams || (await this.vms.cameras().catch(() => []));
+                const arr = Array.isArray(list) ? list : (list && list.cameras) || [];
+                const hit = arr.find(x => x && x.id && new RegExp(`(^|[^\\d.])${ip.replace(/\./g, '\\.')}([^\\d.]|$)`).test(JSON.stringify(x)));
+                target = hit ? hit.id : '';
+            }
+        }
+        if (!target) {
+            this.log.warn('VMS: Klingeln nicht gemeldet – keine VMS-Kamera für die Tür gefunden (Reiter „VMS“ → Kamera der Tür)');
+            return;
+        }
+        const r = await this.vms.external(target, 'ring', 60);
+        this.log.info(`VMS: Klingeln an ${target} gemeldet${r && r.id ? ` (Ereignis ${r.id})` : ''}`);
+    }
+
+    /** admin: list of the VMS cameras for the camera table / ring camera */
+    async onMessage(obj) {
+        if (!obj || !obj.command || !obj.callback) {
+            return;
+        }
+        if (obj.command === 'vmsCameras') {
+            let list = [];
+            try {
+                const info = this.vms ? await this.vms.integration(true) : null;
+                list = info ? info.cameras.map(x => ({ label: `${x.name || x.id} (${x.id})`, value: x.id })) : [];
+            } catch (err) {
+                this.log.warn(`VMS: Kameraliste: ${err.message}`);
+            }
+            if (!list.length) {
+                list = (this.vmsList || []).map(x => ({ label: `${x.name} (${x.id})`, value: x.id }));
+            }
+            this.sendTo(obj.from, obj.command, list, obj.callback);
         }
     }
 
@@ -607,6 +920,9 @@ class Livecam extends utils.Adapter {
             // Photo of the visitor for the call history, from the camera of the station that rings.
             const source = this.sources.get(ringCamera || camera);
             ringPhoto = source ? source.getFrame(1500, 8000).catch(() => null) : Promise.resolve(null);
+            if (this.vms && this.config.vmsRing) {
+                this.vmsRing(ringCamera || camera, stations).catch(err => this.log.warn(`VMS: Klingeln nicht gemeldet: ${err.message}`));
+            }
         });
         this.intercom.on('callEnd', async entry => {
             const image = ringPhoto ? await ringPhoto : null;
@@ -725,6 +1041,11 @@ class Livecam extends utils.Adapter {
             return;
         }
         const local = id.slice(this.namespace.length + 1);
+        const vw = /^vms\.cameras\.([^.]+)\.(recordMode|enabled)$/.exec(local);
+        if (vw) {
+            await this.vmsWrite(vw[1], vw[2], state.val);
+            return;
+        }
         if (local === 'view.ringTone' && this.server) {
             if (TONE_LABELS[state.val]) {
                 this.server.setView({ ringTone: state.val });
@@ -783,6 +1104,12 @@ class Livecam extends utils.Adapter {
 
     checkCamera(cam) {
         const type = cam.type || 'stream';
+        if (type === 'vms') {
+            if (!this.vms) {
+                return 'Typ VMS: im Reiter „VMS“ fehlen Adresse oder API-Schlüssel';
+            }
+            return String(cam.vmsCamera || '').trim() ? null : 'Typ VMS: keine VMS-Kamera gewählt (Spalte „VMS-Kamera“)';
+        }
         const host = (cam.host || '').trim();
         if (type === 'onvif') {
             if (!host) {
@@ -876,6 +1203,9 @@ class Livecam extends utils.Adapter {
     async onUnload(callback) {
         this.unloading = true;
         try {
+            if (this.vms) {
+                this.vms.stop();
+            }
             clearInterval(this.detectStats);
             for (const w of (this.watchers || new Map()).values()) {
                 w.stop();

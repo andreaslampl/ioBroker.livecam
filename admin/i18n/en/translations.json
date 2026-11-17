@@ -94,5 +94,22 @@
   "Plate (e.g. KL-482BX)": "Plate (e.g. KL-482BX)",
   "Name (e.g. ID.4)": "Name (e.g. ID.4)",
   "Report unknown vehicles": "Report unknown vehicles",
-  "detect.plate = 'unbekannt' (without the plate text)": "detect.plate = 'unbekannt' (without the plate text)"
+  "detect.plate = 'unbekannt' (without the plate text)": "detect.plate = 'unbekannt' (without the plate text)",
+  "VMS (Andreas L.-Arts)": "VMS (Andreas L.-Arts)",
+  "VMS camera": "VMS camera",
+  "VMS": "VMS",
+  "Optional: link to the Andreas L.-Arts VMS. Without an address nothing changes. Create the API key in the VMS under Settings -> Interface. Live pictures come through the VMS (RTSP if released there, else MJPEG), so every camera has only one connection - to the VMS.": "Optional: link to the Andreas L.-Arts VMS. Without an address nothing changes. Create the API key in the VMS under Settings -> Interface. Live pictures come through the VMS (RTSP if released there, else MJPEG), so every camera has only one connection - to the VMS.",
+  "VMS address": "VMS address",
+  "e.g. http://192.168.1.10:8080": "e.g. http://192.168.1.10:8080",
+  "API key (alvms_…)": "API key (alvms_…)",
+  "Take over the cameras of the VMS": "Take over the cameras of the VMS",
+  "all VMS cameras appear in livecam without a row in the camera table": "all VMS cameras appear in livecam without a row in the camera table",
+  "Pictures per second (taken over cameras)": "Pictures per second (taken over cameras)",
+  "Events as data points": "Events as data points",
+  "vms.cameras.<camera>.* (online, recording, person, car …, last event, plates, record mode, on/off)": "vms.cameras.<camera>.* (online, recording, person, car …, last event, plates, record mode, on/off)",
+  "Report ringing to the VMS": "Report ringing to the VMS",
+  "when the 2N rings: photo, recording and push in the VMS": "when the 2N rings: photo, recording and push in the VMS",
+  "VMS camera of the door": "VMS camera of the door",
+  "empty = the VMS camera behind the intercom camera, else the one with the IP of the 2N": "empty = the VMS camera behind the intercom camera, else the one with the IP of the 2N",
+  "The camera lists show the cameras of the VMS once address and key are saved.": "The camera lists show the cameras of the VMS once address and key are saved."
 }
