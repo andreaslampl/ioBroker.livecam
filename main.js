@@ -177,6 +177,7 @@ class Livecam extends utils.Adapter {
                 spawnFn: this.spawnFn,
             });
             w.on('state', st => this.onDetectState(cam, st).catch(err => this.log.warn(err.message)));
+            w.on('boxes', text => this.setState(`cameras.${cam.id}.detect.boxes`, text, true));
             w.on('detected', ev => this.onDetected(cam, ev).catch(err => this.log.warn(`${cam.name}: Foto: ${err.message}`)));
             w.on('error', msg => {
                 if (!old.has(`${cam.id}:${msg}`)) {
@@ -209,6 +210,7 @@ class Livecam extends utils.Adapter {
             last: { name: { en: 'Last detection', de: 'Letzte Erkennung' }, type: 'string', role: 'text', def: '' },
             lastTime: { name: { en: 'Time of the last detection', de: 'Zeit der letzten Erkennung' }, type: 'string', role: 'date', def: '' },
             photoUrl: { name: { en: 'Photo of the last detection (with boxes)', de: 'Foto der letzten Erkennung (mit Rahmen)' }, type: 'string', role: 'url.cam', def: '' },
+            boxes: { name: { en: 'Current boxes (JSON, fractions of the picture)', de: 'Aktuelle Rahmen (JSON, Anteile des Bildes)' }, type: 'string', role: 'json', def: '[]' },
         });
         for (const [key, common] of Object.entries(states)) {
             await this.extendObject(`cameras.${id}.detect.${key}`, { type: 'state', common: { ...common, read: true, write: false }, native: {} });
@@ -223,6 +225,7 @@ class Livecam extends utils.Adapter {
             await this.delObjectAsync(`cameras.${id}.detect.${g}`).catch(() => {});
             await this.delObjectAsync(`cameras.${id}.detect.${g}Count`).catch(() => {});
         }
+        await this.setState(`cameras.${id}.detect.boxes`, '[]', true);
         for (const g of groups) {
             await this.setState(`cameras.${id}.detect.${g}`, false, true);
             await this.setState(`cameras.${id}.detect.${g}Count`, 0, true);

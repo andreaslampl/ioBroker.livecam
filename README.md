@@ -293,6 +293,7 @@ im Bereich steht. Mehrere Bereiche pro Kamera möglich; kein Bereich = ganzes Bi
 | `personCount` / `vehicleCount` / `animalCount` | wie viele gerade im Bild / Bereich sind |
 | `last`, `lastTime` | z. B. „2 × Person (87 %)“ und wann |
 | `photoUrl` | Foto der letzten Erkennung mit roten Rahmen (für Push / SmartView) |
+| `boxes` | aktuelle Rahmen als JSON (für die Anzeige über dem Livebild in SmartView) |
 | `zones` | die eingezeichneten Bereiche (JSON) |
 
 **Beispiele:** Logik-Adapter: `cameras.eingang.detect.person` → Ausgang Außenlicht (bleibt an, solange jemand da ist).

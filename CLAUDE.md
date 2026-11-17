@@ -62,6 +62,8 @@ existing cameras adapter lost its images after a while and needed restarts.
   `lib/zones-page.js` `/zones` (tap corners, POST /zones/<id> -> `saveZones()`; also the writable zones state);
   `info.zonesUrl`, `info.detectMs`. Tests: synthetic postprocess / zones / watcher + real model on a grey frame; e2e with a
   real photo in the scratchpad (not committed - image licence). Not yet on the owner's cameras / J4125.
+  0.5.1: Watcher 'boxes' (JSON [{g,l,s,x,y,w,h}] rounded, only on change, [] when everything is off) -> state
+  `detect.boxes` for SmartView's live overlay.
 - `lib/intercom.js` – bridges intercom RTP <-> browser WebRTC (werift) without transcoding; several
   stations (`stations`: name, host, camera, door) - the main one from the old single fields plus the
   `intercoms` table (e.g. Mobotix T25/T26); station picked by the caller's IP, state/ring carry its

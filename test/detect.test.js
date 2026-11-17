@@ -68,6 +68,8 @@ test('watcher: model only on change or while present, on until hold expires, zon
     const states = [];
     w.on('detected', e => events.push(e.group));
     w.on('state', s => states.push(`${s.group}:${s.on}:${s.count}`));
+    const boxes = [];
+    w.on('boxes', b => boxes.push(JSON.parse(b)));
     const frame = v => Buffer.alloc(SIZE * SIZE * 3, v);
     const tick = async (v, ms = 1000) => {
         now += ms;
@@ -91,6 +93,8 @@ test('watcher: model only on change or while present, on until hold expires, zon
     assert.ok(!states.includes('person:false:0'), 'still within hold');
     await tick(60, 4000);
     assert.ok(states.includes('person:false:0'), 'off after hold');
+    assert.deepEqual(boxes[0], [{ g: 'person', l: 'Person', s: 90, x: 0.4, y: 0.3, w: 0.1, h: 0.5 }]);
+    assert.deepEqual(boxes.at(-1), [], 'boxes cleared when nothing is there any more');
     // zone: person outside the zone does not count
     w.setZones(parseZones('[[[0,0],[0.2,0],[0.2,1],[0,1]]]'));
     answer = [{ group: 'person', label: 'Person', score: 0.9, x: 0.4, y: 0.3, w: 0.1, h: 0.5 }];

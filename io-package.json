@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "news": {
+      "0.5.1": {
+        "en": "AI detection: current boxes as data point detect.boxes (for live overlays in SmartView)",
+        "de": "KI-Erkennung: aktuelle Rahmen im Datenpunkt detect.boxes (für die Anzeige über dem Livebild in SmartView)"
+      },
       "0.5.0": {
         "en": "AI detection of persons, vehicles and animals (YOLOX-nano, also on CPUs without AVX), areas drawn on the page /zones, photo with boxes",
         "de": "KI-Erkennung von Personen, Fahrzeugen und Tieren (YOLOX-nano, auch auf Prozessoren ohne AVX), Bereiche auf der Seite /zones einzeichnen, Foto mit Rahmen"
