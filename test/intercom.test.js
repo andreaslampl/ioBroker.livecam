@@ -267,10 +267,10 @@ async function fakeStation({ answer = true, status = 200 } = {}) {
     return st;
 }
 
-async function setupStation(t, opts) {
+async function setupStation(t, opts, extra = {}) {
     const st = await fakeStation(opts);
     t.after(() => st.close());
-    const intercom = new Intercom({ sipPort: 0, stations: [{ name: 'Haustür', host: '127.0.0.1', camera: 'haustuer', sipPort: st.port }], log: quietLog });
+    const intercom = new Intercom({ sipPort: 0, stations: [{ name: 'Haustür', host: '127.0.0.1', camera: 'haustuer', sipPort: st.port }], log: quietLog, ...extra });
     await intercom.start();
     intercom.results = [];
     intercom.on('callEnd', e => intercom.results.push(e));
@@ -311,6 +311,24 @@ test('call from inside: browser dials the station, it answers, audio both ways, 
     assert.match(bye.header('to'), /tag=tagstation/);
     await until(() => b.state.state === 'idle');
     assert.equal(intercom.results.length, 0, 'own calls are no visitors');
+});
+
+test('fixed UDP ports for the sound: station side in the first half, browser (ICE) in the second half', async t => {
+    const { parsePorts } = require('../lib/intercom');
+    assert.deepEqual(parsePorts('41000-41009'), { station: [41000, 41004], browser: [41005, 41009], text: '41000-41009' });
+    assert.equal(parsePorts(''), null);
+    assert.equal(parsePorts('41000-41001'), null, 'too small');
+    const { st, b } = await setupStation(t, {}, { rtpPorts: '41000-41009' });
+    await b.dial(0);
+    await until(() => st.invite);
+    const rtp = Number(/m=audio (\d+)/.exec(st.invite.body)[1]);
+    assert.ok(rtp >= 41000 && rtp <= 41004, `station port ${rtp}`);
+    await until(() => b.state.state === 'active' && b.pc.remoteDescription);
+    const ports = [...b.pc.remoteDescription.sdp.matchAll(/a=candidate:\S+ \d+ \w+ \d+ \S+ (\d+) typ/g)].map(m => Number(m[1]));
+    assert.ok(ports.length && ports.every(p => p >= 41005 && p <= 41009), `browser ports ${ports}`);
+    await until(() => b.pc.connectionState === 'connected', 10000);
+    b.send({ type: 'hangup' });
+    await until(() => b.state.state === 'idle');
 });
 
 test('call from inside: hang up while it rings = CANCEL; refused call = error message', async t => {

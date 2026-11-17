@@ -198,6 +198,7 @@ class Livecam extends utils.Adapter {
         const camera = stations[0].camera;
         this.intercom = new Intercom({
             sipPort: Number(c.sipPort) || 5060,
+            rtpPorts: String(c.rtpPorts || ''),
             stations,
             ringTimeout: Number(c.ringTimeout) || 60,
             log: this.log,
@@ -238,6 +239,9 @@ class Livecam extends utils.Adapter {
             const port = await this.intercom.start();
             const hosts = stations.map(st => st.host).filter(Boolean);
             this.log.info(`Intercom: listening for SIP calls on UDP port ${port}${hosts.length ? ` from ${hosts.join(', ')}` : ''}`);
+            this.log.info(this.intercom.ports
+                ? `Intercom: Ton über UDP ${this.intercom.ports.station.join('-')} (Sprechstelle) und ${this.intercom.ports.browser.join('-')} (Browser) - in der Firewall freigeben`
+                : 'Intercom: Ton über zufällige UDP-Ports (für Firewall-Regeln einen festen Bereich bei "UDP-Ports für den Ton" eintragen)');
         } catch (err) {
             this.log.error(`Intercom: cannot open SIP port ${c.sipPort || 5060}: ${err.message}`);
             this.intercom = null;

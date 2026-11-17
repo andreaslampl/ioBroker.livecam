@@ -201,6 +201,15 @@
           "sm": 6,
           "md": 2
         },
+        "rtpPorts": {
+          "type": "text",
+          "label": "UDP ports for the sound",
+          "help": "e.g. 40000-40019 (empty = random). Allow these UDP ports in the firewall: from the intercom and from the phones / touch PC to ioBroker",
+          "hidden": "!data.intercomEnabled",
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        },
         "intercomCamera": {
           "type": "text",
           "label": "Camera name of the intercom",

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "news": {
+      "0.4.2": {
+        "en": "Intercom: fixed UDP port range for the sound (setting 'UDP ports for the sound') so firewall rules between VLANs are possible",
+        "de": "Sprechanlage: fester UDP-Port-Bereich für den Ton (Einstellung „UDP-Ports für den Ton“), damit Firewall-Regeln zwischen VLANs möglich sind"
+      },
       "0.4.1": {
         "en": "Intercom diagnosis in the log: audio addresses of browser and ioBroker, connection state, packets per direction after each call",
         "de": "Sprechanlage-Diagnose im Log: Ton-Adressen von Browser und ioBroker, Verbindungsstatus, Pakete je Richtung nach jedem Gespräch"
@@ -117,6 +121,7 @@
     "cameras": [],
     "intercomEnabled": false,
     "sipPort": 5060,
+    "rtpPorts": "",
     "intercomHost": "",
     "intercomCamera": "",
     "ringTimeout": 60,

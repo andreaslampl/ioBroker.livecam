@@ -251,8 +251,18 @@ Ein Widget **Basic → HTML** über den ganzen Bildschirm legen und als HTML ein
 Wichtig ist `allow="microphone; autoplay"`, sonst blockiert der Browser Mikrofon und Klingelton
 im eingebetteten Fenster. Die fertige Adresse steht auch im Datenpunkt `livecam.0.info.viewUrl`.
 
-**Netzwerk:** Der ioBroker-Server braucht eingehend **UDP 5060** (SIP) und freie UDP-Ports für
-den Ton; für Anrufe von innen ausgehend UDP 5060 zur Sprechstelle. In einem normalen Heimnetz ohne Firewall auf dem Server ist nichts zu tun.
+**Netzwerk / Firewall:** Klingeln läuft über **UDP 5060** (SIP), der Ton über eigene UDP-Ports. Liegen Sprechstelle,
+ioBroker und Handys in verschiedenen Netzen (VLANs), unter „UDP-Ports für den Ton“ einen festen Bereich eintragen, z. B.
+**`40000-40019`** – die erste Hälfte nimmt livecam für den Ton zur Sprechstelle, die zweite für die Browser. Dann in der
+Firewall erlauben:
+
+| Von | Zu | Ports |
+| --- | --- | --- |
+| Sprechstelle | ioBroker | UDP 5060 und der ganze Bereich (z. B. 40000-40019) |
+| ioBroker | Sprechstelle | UDP 5060 und die RTP-Ports der Sprechstelle (2N: in der Weboberfläche unter Telefon/Audio, oft 4900-4999) – oder alles UDP zur Sprechstelle |
+| Handys / Touch-PC (wenn in einem anderen Netz) | ioBroker | UDP, der ganze Bereich |
+
+Nach jedem Gespräch steht im Log eine **Ton-Statistik** (Pakete je Richtung) mit Hinweisen, wo der Ton hängen bleibt. In einem normalen Heimnetz ohne Firewall auf dem Server ist nichts zu tun.
 
 ## Datenpunkte
 

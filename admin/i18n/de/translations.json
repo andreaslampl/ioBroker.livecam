@@ -70,5 +70,7 @@
   "URL (HTTP)": "URL (HTTP)",
   "none": "keiner",
   "Door code": "Türcode",
-  "Door URL": "Tür-URL"
+  "Door URL": "Tür-URL",
+  "UDP ports for the sound": "UDP-Ports für den Ton",
+  "e.g. 40000-40019 (empty = random). Allow these UDP ports in the firewall: from the intercom and from the phones / touch PC to ioBroker": "z. B. 40000-40019 (leer = zufällig). Diese UDP-Ports in der Firewall erlauben: von der Sprechstelle und von Handys / Touch-PC zum ioBroker"
 }

@@ -41,6 +41,10 @@ existing cameras adapter lost its images after a while and needed restarts.
   browser's ICE candidates (`Intercom.candidates()`, mDNS names marked), ioBroker's own candidates + station address/codec,
   "Ton-Verbindung zum Browser steht / fehlgeschlagen", and after the call `Ton-Statistik` (packets station->ioBroker,
   ->browser, browser->ioBroker, ->station) with hints. Headless Chromium offers only a .local candidate even with mic.
+- 0.4.2: owner's VLANs: ioBroker VM (Synology VMM, several NICs) + touch PC in Smarthome, 2N in Security, ringing works
+  (SIP 5060 allowed) but no sound -> setting `rtpPorts` "min-max" (`parsePorts()`, >= 4 ports): first half = RTP socket
+  towards the station (`_bindRtp()` tries each port), second half = werift `icePortRange` for browsers. Startup log names
+  the ranges. Test checks the SDP ports. Not yet confirmed that the firewall was the cause.
 - `lib/intercom.js` – bridges intercom RTP <-> browser WebRTC (werift) without transcoding; several
   stations (`stations`: name, host, camera, door) - the main one from the old single fields plus the
   `intercoms` table (e.g. Mobotix T25/T26); station picked by the caller's IP, state/ring carry its
