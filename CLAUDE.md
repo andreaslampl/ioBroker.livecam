@@ -64,7 +64,7 @@ existing cameras adapter lost its images after a while and needed restarts.
   real photo in the scratchpad (not committed - image licence). Not yet on the owner's cameras / J4125.
   0.5.1: Watcher 'boxes' (JSON [{g,l,s,x,y,w,h}] rounded, only on change, [] when everything is off) -> state
   `detect.boxes` for SmartView's live overlay.
-  Field: owner reports person detection works very well on the real cameras (detectMs / CPU on the J4125 not reported yet).
+  Field: owner reports person detection works very well on the real cameras (info.detectMs = 270 on the J4125 VM, as expected).
 - `lib/intercom.js` – bridges intercom RTP <-> browser WebRTC (werift) without transcoding; several
   stations (`stations`: name, host, camera, door) - the main one from the old single fields plus the
   `intercoms` table (e.g. Mobotix T25/T26); station picked by the caller's IP, state/ring carry its
