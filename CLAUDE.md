@@ -45,6 +45,8 @@ existing cameras adapter lost its images after a while and needed restarts.
   (SIP 5060 allowed) but no sound -> setting `rtpPorts` "min-max" (`parsePorts()`, >= 4 ports): first half = RTP socket
   towards the station (`_bindRtp()` tries each port), second half = werift `icePortRange` for browsers. Startup log names
   the ranges. Test checks the SDP ports. Not yet confirmed that the firewall was the cause.
+  Field: with the fixed range + firewall rules talking works from the owner's iPhone (both directions); the Debian kiosk
+  touch PC (same VLAN as ioBroker) still had no sound - asked for its Ton-Statistik and kiosk checks.
 - `lib/intercom.js` – bridges intercom RTP <-> browser WebRTC (werift) without transcoding; several
   stations (`stations`: name, host, camera, door) - the main one from the old single fields plus the
   `intercoms` table (e.g. Mobotix T25/T26); station picked by the caller's IP, state/ring carry its
