@@ -65,6 +65,18 @@ existing cameras adapter lost its images after a while and needed restarts.
   0.5.1: Watcher 'boxes' (JSON [{g,l,s,x,y,w,h}] rounded, only on change, [] when everything is off) -> state
   `detect.boxes` for SmartView's live overlay.
   Field: owner reports person detection works very well on the real cameras (info.detectMs = 270 on the J4125 VM, as expected).
+  0.6.0 number plates (owner asked; own vehicles only): `lib/plates.js` `PlateReader` (shares the Detector's ort + queue):
+  `models/plate_detect_384.onnx` (open-image-models yolo-v9-t-384 end2end, MIT ankandrew; centred letterbox RGB /255,
+  out [n,7] x1 y1 x2 y2 cls score, rows with score 0 = padding) on the vehicle box (+12 %) cut from a fresh full-size
+  getFrame() JPEG via ffmpeg, then `models/plate_ocr_cct_s_v2.onnx` (fast-plate-ocr cct_s_v2_global, MIT; uint8 NHWC
+  64x128 RGB stretched, plate [1,10,37] probs, '_' = empty). `parseKnown()` / `match()` (normalize, look-alikes O/Q/D=0
+  I=1 Z=2 S=5 B=8 G=6, Levenshtein <= 1 for 5+ chars). Camera column `plates` (needs vehicle), config `plates`
+  [{plate, name}], `plateUnknown`. main `startPlates()` (states plates.<slug>.present/lastSeen/camera, old slugs deleted;
+  detect.plate/plateKnown/plateTime), `plateSession()` on vehicle rising edge (once per appearance, `plateDone`; every
+  `plateEvery` 2 s, max `plateTries` 8, reading needs prob >= 0.6), `onPlate()`, `plateGone()` on vehicle off.
+  PRIVACY: readings not on the list are never stored or logged (only "unbekannt" with plateUnknown) - keep it that way.
+  Tests: unit + real models on `test/fixtures/plate-scene.jpg` (self-made drawing); e2e in the scratchpad (lpr/e2e.js,
+  bus photo with a pasted synthetic plate, not committed). Synthetic plates read 100 %; not yet on the owner's cameras.
 - `lib/intercom.js` – bridges intercom RTP <-> browser WebRTC (werift) without transcoding; several
   stations (`stations`: name, host, camera, door) - the main one from the old single fields plus the
   `intercoms` table (e.g. Mobotix T25/T26); station picked by the caller's IP, state/ring carry its

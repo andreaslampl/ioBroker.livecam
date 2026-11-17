@@ -151,6 +151,13 @@
                   "value": "person,animal"
                 }
               ]
+            },
+            {
+              "type": "checkbox",
+              "attr": "plates",
+              "title": "Plates",
+              "width": "5%",
+              "default": false
             }
           ]
         }
@@ -197,6 +204,48 @@
           "xs": 12,
           "sm": 6,
           "md": 3
+        },
+        "plateHeader": {
+          "type": "header",
+          "text": "Number plates of own vehicles",
+          "size": 4,
+          "newLine": true
+        },
+        "plateHelp": {
+          "type": "staticText",
+          "text": "Tick 'Plates' in the camera table (the camera needs vehicle detection). While a vehicle is in the picture its plate is read a few times and compared with this list. Only plates on the list are reported by name; other plates are never stored or written to the log. Not suitable as the only key for gate or door - a plate can be copied.",
+          "xs": 12
+        },
+        "plates": {
+          "type": "table",
+          "label": "Own plates",
+          "xs": 12,
+          "items": [
+            {
+              "type": "text",
+              "attr": "plate",
+              "title": "Plate (e.g. KL-482BX)",
+              "width": "40%",
+              "filter": false,
+              "sort": false
+            },
+            {
+              "type": "text",
+              "attr": "name",
+              "title": "Name (e.g. ID.4)",
+              "width": "60%",
+              "filter": false,
+              "sort": false
+            }
+          ]
+        },
+        "plateUnknown": {
+          "type": "checkbox",
+          "label": "Report unknown vehicles",
+          "help": "detect.plate = 'unbekannt' (without the plate text)",
+          "default": false,
+          "xs": 12,
+          "sm": 6
         }
       }
     },

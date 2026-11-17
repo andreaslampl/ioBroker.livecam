@@ -299,6 +299,39 @@ im Bereich steht. Mehrere Bereiche pro Kamera möglich; kein Bereich = ganzes Bi
 **Beispiele:** Logik-Adapter: `cameras.eingang.detect.person` → Ausgang Außenlicht (bleibt an, solange jemand da ist).
 SmartView: Push-Regel „wird Ein“ auf `cameras.eingang.detect.person`.
 
+### Kennzeichen der eigenen Fahrzeuge
+
+livecam kann die **Kennzeichen eurer eigenen Autos** erkennen, z. B. Einfahrtslicht ein oder eine Mitteilung „ID.4 ist
+heimgekommen“.
+
+1. Kameratabelle: Die Kamera braucht die Fahrzeug-Erkennung (z. B. „Personen + Fahrzeuge“). Dazu die Spalte
+   **„Kennzeichen“** ankreuzen.
+2. Reiter „KI-Erkennung“ → **„Eigene Kennzeichen“**: Kennzeichen und einen Namen eintragen (z. B. `KL-482BX` / `ID.4`).
+   Bindestriche, Leerzeichen und Groß-/Kleinschreibung sind egal.
+
+Sobald ein Fahrzeug im Bild ist, holt livecam ein Bild in voller Auflösung, sucht darauf das Kennzeichen und liest es.
+Das wiederholt es alle 2 s, höchstens 8-mal, bis eines der eigenen Kennzeichen erkannt ist. Ein Zeichen darf dabei
+falsch gelesen sein; ähnliche Zeichen wie 0/O, 8/B oder 5/S gelten als gleich.
+
+**Datenschutz:** Gemeldet werden **nur Kennzeichen aus der Liste**, und zwar mit ihrem Namen. Andere Kennzeichen werden
+weder gespeichert noch ins Log geschrieben. Mit „Unbekannte Fahrzeuge melden“ steht dann nur „unbekannt“ in
+`detect.plate`.
+
+**Gut zu wissen:**
+- Das Kennzeichen muss im Kamerabild gut lesbar sein: mindestens etwa 100 Pixel breit, nicht zu schräg, nachts beleuchtet
+  (Infrarot geht meist). Eine Kamera, die auf die Einfahrt zoomt, ist viel besser als eine Weitwinkel-Übersicht.
+- **Nicht als einziger Schlüssel für Tor oder Tür verwenden** – ein Kennzeichen kann man nachmachen. Für Licht,
+  Mitteilungen oder „Garagentor fragt nach“ ist es gut geeignet.
+- Rechenlast: nur solange ein Fahrzeug da ist. Die Zeit pro Lesung steht in `info.plateMs`.
+
+| Datenpunkt | Bedeutung |
+| --- | --- |
+| `cameras.<Name>.detect.plate` | Name des erkannten eigenen Fahrzeugs (oder „unbekannt“) |
+| `cameras.<Name>.detect.plateKnown` | `true`, solange ein eigenes Fahrzeug an dieser Kamera ist |
+| `cameras.<Name>.detect.plateTime` | Zeit der Erkennung |
+| `plates.<Fahrzeug>.present` | `true`, solange dieses Fahrzeug an einer Kamera steht |
+| `plates.<Fahrzeug>.lastSeen`, `.camera` | wann und wo zuletzt gesehen |
+
 ## Datenpunkte
 
 | Datenpunkt | Bedeutung |
@@ -347,4 +380,5 @@ getestet: Klingeln, Abnehmen, Ton in beide Richtungen, Türcode, Auflegen, Abbru
 ## Lizenz
 
 MIT. Das Erkennungsmodell `models/yolox_nano.onnx` stammt aus YOLOX von Megvii (Apache-2.0,
-https://github.com/Megvii-BaseDetection/YOLOX); die KI-Laufzeit onnxruntime-web von Microsoft (MIT).
+https://github.com/Megvii-BaseDetection/YOLOX); die KI-Laufzeit onnxruntime-web von Microsoft (MIT). Die Kennzeichen-Modelle
+`models/plate_*.onnx` stammen von ankandrew (open-image-models und fast-plate-ocr, MIT), Details in `models/README.md`.

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.5.1",
+    "version": "0.6.0",
     "news": {
+      "0.6.0": {
+        "en": "Number plates of own vehicles (list in the settings): camera column 'Plates', states plates.<name>.* and cameras.<name>.detect.plate*; unknown plates are never stored",
+        "de": "Kennzeichen der eigenen Fahrzeuge (Liste in den Einstellungen): Spalte „Kennzeichen“, Datenpunkte plates.<Name>.* und cameras.<Name>.detect.plate*; fremde Kennzeichen werden nie gespeichert"
+      },
       "0.5.1": {
         "en": "AI detection: current boxes as data point detect.boxes (for live overlays in SmartView)",
         "de": "KI-Erkennung: aktuelle Rahmen im Datenpunkt detect.boxes (für die Anzeige über dem Livebild in SmartView)"
@@ -231,6 +235,22 @@
         },
         "type": "string",
         "role": "url",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.plateMs",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Number plates: average time per reading",
+          "de": "Kennzeichen: durchschnittliche Zeit pro Lesung"
+        },
+        "type": "number",
+        "role": "value",
+        "unit": "ms",
         "read": true,
         "write": false
       },

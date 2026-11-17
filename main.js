@@ -11,6 +11,7 @@ const { CallHistory } = require('./lib/history');
 const { TONE_LABELS } = require('./lib/tones');
 const { Detector, parseZones, GROUPS, SIZE } = require('./lib/detect');
 const { Watcher, jpegSize } = require('./lib/watch');
+const { PlateReader, parseKnown, match: matchPlate } = require('./lib/plates');
 const fs = require('node:fs');
 
 function localAddress() {
@@ -84,7 +85,8 @@ class Livecam extends utils.Adapter {
             );
             this.sources.set(id, source);
             if (cam.detect) {
-                detectCams.push({ id, name: cam.name || id, groups: String(cam.detect).split(',').filter(g => GROUPS[g]) });
+                const groups = String(cam.detect).split(',').filter(g => GROUPS[g]);
+                detectCams.push({ id, name: cam.name || id, groups, plates: Boolean(cam.plates) && groups.includes('vehicle') });
             }
             await this.createCameraObjects(id, cam.name || id);
             await this.setState(`cameras.${id}.mjpegUrl`, `${base}/cam/${id}.mjpeg${query}`, true);
@@ -188,12 +190,16 @@ class Livecam extends utils.Adapter {
             this.watchers.set(cam.id, w);
             w.start();
         }
+        await this.startPlates(list.filter(cam => cam.plates && this.watchers.has(cam.id)));
         this.subscribeStates('cameras.*.detect.zones');
         this.log.info(`KI-Erkennung aktiv für ${[...this.watchers.keys()].join(', ')}`);
         // average time of one check, so the CPU load can be judged
         this.detectStats = setInterval(() => {
             if (this.detector && this.detector.runs) {
                 this.setState('info.detectMs', this.detector.avgMs, true);
+            }
+            if (this.plateReader && this.plateReader.runs) {
+                this.setState('info.plateMs', this.plateReader.avgMs, true);
             }
         }, 60000);
     }
@@ -232,7 +238,189 @@ class Livecam extends utils.Adapter {
         }
     }
 
+    // ---------------- number plates (own vehicles only) ----------------
+
+    /** Plate reading for cameras with the column "Kennzeichen" (needs vehicle detection). */
+    async startPlates(list) {
+        this.plateCams = new Map(list.map(cam => [cam.id, cam]));
+        this.knownPlates = parseKnown(this.config.plates);
+        const slugs = new Set();
+        for (const k of this.knownPlates) {
+            let slug = cameraId(k.name, 0);
+            while (slugs.has(slug)) {
+                slug += '_';
+            }
+            slugs.add(slug);
+            k.slug = slug;
+        }
+        // own vehicles: plates.<name>.present / lastSeen / camera (also without a camera, so the objects exist)
+        const old = await this.getObjectViewAsync('system', 'channel', { startkey: `${this.namespace}.plates.`, endkey: `${this.namespace}.plates.\u9999` }).catch(() => ({ rows: [] }));
+        for (const row of old.rows) {
+            const slug = row.id.split('.').pop();
+            if (!slugs.has(slug)) {
+                await this.delObjectAsync(`plates.${slug}`, { recursive: true }).catch(() => {});
+            }
+        }
+        for (const k of this.knownPlates) {
+            await this.extendObject(`plates.${k.slug}`, { type: 'channel', common: { name: k.name }, native: {} });
+            const states = {
+                present: { name: { en: 'Vehicle is there (plate read)', de: 'Fahrzeug ist da (Kennzeichen gelesen)' }, type: 'boolean', role: 'sensor.motion', def: false },
+                lastSeen: { name: { en: 'Last seen', de: 'Zuletzt gesehen' }, type: 'string', role: 'date', def: '' },
+                camera: { name: { en: 'Camera', de: 'Kamera' }, type: 'string', role: 'text', def: '' },
+            };
+            for (const [key, common] of Object.entries(states)) {
+                await this.extendObject(`plates.${k.slug}.${key}`, { type: 'state', common: { ...common, read: true, write: false }, native: {} });
+            }
+            await this.setState(`plates.${k.slug}.present`, false, true);
+        }
+        for (const cam of list) {
+            const states = {
+                plate: { name: { en: 'Vehicle (name from the list of plates)', de: 'Fahrzeug (Name aus der Kennzeichen-Liste)' }, type: 'string', role: 'text', def: '' },
+                plateKnown: { name: { en: 'Own vehicle recognised', de: 'Eigenes Fahrzeug erkannt' }, type: 'boolean', role: 'indicator', def: false },
+                plateTime: { name: { en: 'Time of the reading', de: 'Zeit der Erkennung' }, type: 'string', role: 'date', def: '' },
+            };
+            for (const [key, common] of Object.entries(states)) {
+                await this.extendObject(`cameras.${cam.id}.detect.${key}`, { type: 'state', common: { ...common, read: true, write: false }, native: {} });
+            }
+            await this.setState(`cameras.${cam.id}.detect.plate`, '', true);
+            await this.setState(`cameras.${cam.id}.detect.plateKnown`, false, true);
+        }
+        if (!list.length) {
+            return;
+        }
+        if (!this.knownPlates.length && !this.config.plateUnknown) {
+            this.log.warn('Kennzeichen: die Liste der eigenen Kennzeichen ist leer – es wird nichts gemeldet');
+        }
+        this.plateReader = new PlateReader({ detector: this.detector, log: this.log, ffmpegPath: (this.config.ffmpegPath || '').trim() || 'ffmpeg', spawnFn: this.spawnFn });
+        try {
+            await this.plateReader.init();
+        } catch (err) {
+            this.log.error(`Kennzeichen-Erkennung kann nicht starten: ${err.message}`);
+            this.plateReader = null;
+            return;
+        }
+        this.plateRuns = new Map();
+        this.log.info(`Kennzeichen-Erkennung aktiv für ${list.map(c => c.name).join(', ')} (${this.knownPlates.length} eigene Kennzeichen)`);
+    }
+
+    /**
+     * While a vehicle is there: read the plate every `plateEvery` ms, at most `plateTries` times, until an own plate
+     * is found. Readings that are not on the list are dropped (never stored or logged).
+     */
+    async plateSession(cam) {
+        // one session per appearance of a vehicle (a new count while it is there does not start another one)
+        this.plateDone = this.plateDone || new Set();
+        if (!this.plateReader || this.plateRuns.get(cam.id) || this.plateDone.has(cam.id)) {
+            return;
+        }
+        this.plateDone.add(cam.id);
+        const run = { stop: false };
+        this.plateRuns.set(cam.id, run);
+        const w = this.watchers.get(cam.id);
+        const tries = this.plateTries || 8;
+        let unknown = 0;
+        let read = 0;
+        try {
+            for (let i = 0; i < tries && !run.stop && !this.unloading; i++) {
+                if (i) {
+                    await new Promise(r => setTimeout(r, this.plateEvery || 2000));
+                }
+                if (run.stop || !w.state.vehicle || !w.state.vehicle.on) {
+                    break;
+                }
+                let jpeg;
+                try {
+                    jpeg = await this.sources.get(cam.id).getFrame(2000, 8000);
+                } catch (err) {
+                    this.log.debug(`${cam.name}: Kennzeichen: kein Bild (${err.message})`);
+                    continue;
+                }
+                const orig = jpegSize(jpeg);
+                if (!orig) {
+                    continue;
+                }
+                let areas = [];
+                try {
+                    areas = JSON.parse(w.lastBoxes || '[]').filter(b => b.g === 'vehicle');
+                } catch {
+                    // whole picture
+                }
+                areas.sort((a, b) => b.w * b.h - a.w * a.h);
+                const readings = await this.plateReader.read(jpeg, orig, areas);
+                let found = null;
+                for (const r of readings) {
+                    if (r.text.length < 3 || r.prob < 0.6) {
+                        continue;
+                    }
+                    read++;
+                    const m = matchPlate(r.text, this.knownPlates);
+                    if (m) {
+                        found = { ...m, prob: r.prob };
+                        break;
+                    }
+                    if (r.prob >= 0.8 && r.text.length >= 4) {
+                        unknown++;
+                    }
+                }
+                if (found) {
+                    await this.onPlate(cam, found);
+                    return;
+                }
+            }
+            if (unknown && this.config.plateUnknown) {
+                await this.setState(`cameras.${cam.id}.detect.plate`, 'unbekannt', true);
+                await this.setState(`cameras.${cam.id}.detect.plateTime`, new Date().toISOString(), true);
+                this.log.info(`${cam.name}: Fahrzeug mit unbekanntem Kennzeichen`);
+            } else if (!read) {
+                this.log.debug(`${cam.name}: kein Kennzeichen lesbar`);
+            }
+        } finally {
+            this.plateRuns.delete(cam.id);
+        }
+    }
+
+    async onPlate(cam, m) {
+        const k = this.knownPlates.find(x => x.plate === m.plate);
+        const now = new Date().toISOString();
+        await this.setState(`cameras.${cam.id}.detect.plate`, m.name, true);
+        await this.setState(`cameras.${cam.id}.detect.plateKnown`, true, true);
+        await this.setState(`cameras.${cam.id}.detect.plateTime`, now, true);
+        if (k) {
+            await this.setState(`plates.${k.slug}.present`, true, true);
+            await this.setState(`plates.${k.slug}.lastSeen`, now, true);
+            await this.setState(`plates.${k.slug}.camera`, cam.name, true);
+            this.platePresent = this.platePresent || new Map();
+            this.platePresent.set(k.slug, cam.id);
+        }
+        this.log.info(`${cam.name}: eigenes Fahrzeug erkannt – ${m.name}${m.dist ? ' (ein Zeichen anders gelesen)' : ''}, Sicherheit ${Math.round(m.prob * 100)} %`);
+    }
+
+    /** vehicle gone at a camera: its own-vehicle states go off */
+    async plateGone(cam) {
+        const run = this.plateRuns && this.plateRuns.get(cam.id);
+        if (run) {
+            run.stop = true;
+        }
+        if (this.plateDone) {
+            this.plateDone.delete(cam.id);
+        }
+        await this.setState(`cameras.${cam.id}.detect.plateKnown`, false, true);
+        for (const [slug, camId] of this.platePresent || []) {
+            if (camId === cam.id) {
+                this.platePresent.delete(slug);
+                await this.setState(`plates.${slug}.present`, false, true);
+            }
+        }
+    }
+
     async onDetectState(cam, st) {
+        if (st.group === 'vehicle' && this.plateCams && this.plateCams.has(cam.id)) {
+            if (st.on) {
+                this.plateSession(cam).catch(err => this.log.warn(`${cam.name}: Kennzeichen: ${err.message}`));
+            } else {
+                await this.plateGone(cam);
+            }
+        }
         await this.setState(`cameras.${cam.id}.detect.${st.group}Count`, st.count, true);
         await this.setState(`cameras.${cam.id}.detect.${st.group}`, st.on, true);
         if (st.on) {
@@ -686,6 +874,7 @@ class Livecam extends utils.Adapter {
     }
 
     async onUnload(callback) {
+        this.unloading = true;
         try {
             clearInterval(this.detectStats);
             for (const w of (this.watchers || new Map()).values()) {

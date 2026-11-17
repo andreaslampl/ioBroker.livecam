@@ -86,5 +86,13 @@
   "Stays on after the last detection (s)": "Bleibt nach der letzten Erkennung an (s)",
   "e.g. light on as long as somebody is there": "z. B. Licht an, solange jemand da ist",
   "At most one check per camera every (s)": "Höchstens eine Prüfung pro Kamera alle (s)",
-  "Higher = less CPU": "Höher = weniger CPU-Last"
+  "Higher = less CPU": "Höher = weniger CPU-Last",
+  "Plates": "Kennzeichen",
+  "Number plates of own vehicles": "Kennzeichen der eigenen Fahrzeuge",
+  "Tick 'Plates' in the camera table (the camera needs vehicle detection). While a vehicle is in the picture its plate is read a few times and compared with this list. Only plates on the list are reported by name; other plates are never stored or written to the log. Not suitable as the only key for gate or door - a plate can be copied.": "In der Kameratabelle „Kennzeichen“ ankreuzen (die Kamera braucht dafür die Fahrzeug-Erkennung). Solange ein Fahrzeug im Bild ist, wird sein Kennzeichen ein paar Mal gelesen und mit dieser Liste verglichen. Gemeldet werden nur Kennzeichen aus der Liste, mit ihrem Namen; andere Kennzeichen werden nie gespeichert und nicht ins Log geschrieben. Nicht als einziger Schlüssel für Tor oder Tür geeignet – ein Kennzeichen kann man nachmachen.",
+  "Own plates": "Eigene Kennzeichen",
+  "Plate (e.g. KL-482BX)": "Kennzeichen (z. B. KL-482BX)",
+  "Name (e.g. ID.4)": "Name (z. B. ID.4)",
+  "Report unknown vehicles": "Unbekannte Fahrzeuge melden",
+  "detect.plate = 'unbekannt' (without the plate text)": "detect.plate = „unbekannt“ (ohne das Kennzeichen selbst)"
 }
