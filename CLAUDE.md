@@ -48,6 +48,20 @@ existing cameras adapter lost its images after a while and needed restarts.
   Field: with the fixed range + firewall rules talking works from the owner's iPhone (both directions); the Debian kiosk
   touch PC (same VLAN as ioBroker) still had no sound - its kiosk script was not updated yet (no
   WebRtcHideLocalIpsWithMdns flag). After updating it: talking works on the touch PC too (owner confirmed).
+- AI detection (0.5.0, owner: old cameras, motion detection too unreliable, wants "light on while a person is there", push,
+  later number plates; ioBroker = VM on a DS920+ / Celeron J4125, no AVX): `lib/detect.js` `Detector` = YOLOX-nano
+  (`models/yolox_nano.onnx`, Apache-2.0, sha256 in models/README.md) on onnxruntime-web 1.31.1 (exact, WebAssembly - no
+  AVX needed; ~90 ms per check on the dev machine, expect ~300 ms on the J4125), one session + queue for all cameras,
+  `postprocess()` (grid decode, groups person/vehicle/animal with German labels, NMS, boxes as fractions of the picture),
+  `parseZones()`/`inZones()` (polygons 0..1, feet point = bottom centre). `lib/watch.js` `Watcher` per camera: stream ->
+  own ffmpeg with `-skip_frame nokey` + letterbox 416 raw BGR (orig size parsed from ffmpeg's stderr; files get `-re`),
+  snapshot/http -> source.getFrame() + ffmpeg decode; motion gate (52x52 grey mean diff >= 3) / still present / every 30 s,
+  max one check per `interval`; 'state' (on/count, off after `hold`) + 'detected' (rising edge). main: camera column
+  `detect`, tab settings detectScore/Hold/Interval, states `cameras.<id>.detect.*`, photo = fresh full-size frame checked
+  again (else the detection frame) with ffmpeg drawbox -> data dir detect/<id>.jpg, served `/detect/<id>.jpg`;
+  `lib/zones-page.js` `/zones` (tap corners, POST /zones/<id> -> `saveZones()`; also the writable zones state);
+  `info.zonesUrl`, `info.detectMs`. Tests: synthetic postprocess / zones / watcher + real model on a grey frame; e2e with a
+  real photo in the scratchpad (not committed - image licence). Not yet on the owner's cameras / J4125.
 - `lib/intercom.js` – bridges intercom RTP <-> browser WebRTC (werift) without transcoding; several
   stations (`stations`: name, host, camera, door) - the main one from the old single fields plus the
   `intercoms` table (e.g. Mobotix T25/T26); station picked by the caller's IP, state/ring carry its

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.4.2",
+    "version": "0.5.0",
     "news": {
+      "0.5.0": {
+        "en": "AI detection of persons, vehicles and animals (YOLOX-nano, also on CPUs without AVX), areas drawn on the page /zones, photo with boxes",
+        "de": "KI-Erkennung von Personen, Fahrzeugen und Tieren (YOLOX-nano, auch auf Prozessoren ohne AVX), Bereiche auf der Seite /zones einzeichnen, Foto mit Rahmen"
+      },
       "0.4.2": {
         "en": "Intercom: fixed UDP port range for the sound (setting 'UDP ports for the sound') so firewall rules between VLANs are possible",
         "de": "Sprechanlage: fester UDP-Port-Bereich für den Ton (Einstellung „UDP-Ports für den Ton“), damit Firewall-Regeln zwischen VLANs möglich sind"
@@ -134,7 +138,10 @@
     "ringTone": "dingdong",
     "ringToneUrl": "",
     "ringVolume": 70,
-    "intercoms": []
+    "intercoms": [],
+    "detectScore": 55,
+    "detectHold": 20,
+    "detectInterval": 1
   },
   "protectedNative": [
     "cameras",
@@ -205,6 +212,37 @@
         },
         "type": "string",
         "role": "url",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.zonesUrl",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Page to draw the detection areas",
+          "de": "Seite zum Einzeichnen der Erkennungs-Bereiche"
+        },
+        "type": "string",
+        "role": "url",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.detectMs",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "AI detection: average time per check",
+          "de": "KI-Erkennung: durchschnittliche Zeit pro Prüfung"
+        },
+        "type": "number",
+        "role": "value",
+        "unit": "ms",
         "read": true,
         "write": false
       },

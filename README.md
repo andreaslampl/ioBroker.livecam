@@ -264,6 +264,40 @@ Firewall erlauben:
 
 Nach jedem Gespräch steht im Log eine **Ton-Statistik** (Pakete je Richtung) mit Hinweisen, wo der Ton hängen bleibt. In einem normalen Heimnetz ohne Firewall auf dem Server ist nichts zu tun.
 
+## KI-Erkennung: Personen, Fahrzeuge, Tiere
+
+livecam erkennt auf Wunsch **Personen, Fahrzeuge** (Auto, LKW, Bus, Motorrad, Fahrrad) und **Tiere** (Katze, Hund,
+Vogel …) – auch mit älteren Kameras ohne eigene Analyse. Damit z. B. **Licht ein, solange jemand am Eingang ist**, oder
+eine Push-Mitteilung, wenn eine Person in einen Bereich kommt.
+
+**Einschalten:** in der Kameratabelle Spalte **„KI-Erkennung“** wählen (Personen / + Fahrzeuge / + Tiere). Im Reiter
+„KI-Erkennung“: Mindest-Sicherheit (Standard 55 %), wie lange „erkannt“ nach der letzten Erkennung anbleibt (20 s) und
+wie oft höchstens geprüft wird (1 × pro Sekunde und Kamera).
+
+**Rechenlast:** Die Erkennung läuft im ioBroker (Modell YOLOX-nano, über WebAssembly – auch auf Prozessoren ohne AVX wie
+dem Celeron J4125). Damit sie wenig Last macht:
+- Video-Kameras: livecam dekodiert dafür **nur die Schlüsselbilder** (meist 1 pro Sekunde) in kleiner Auflösung.
+- Die KI rechnet **nur, wenn sich das Bild ändert** oder solange etwas erkannt ist, sonst alle 30 s einmal.
+- Alle Kameras teilen sich ein Modell, es rechnet immer nur eine Prüfung gleichzeitig.
+Die durchschnittliche Zeit pro Prüfung steht in `info.detectMs`.
+
+**Bereiche:** Auf der Seite **`http://<ioBroker-IP>:8095/zones`** (Adresse in `info.zonesUrl`) auf das Kamerabild
+tippen und Ecken setzen – z. B. nur der Weg zur Haustür. Gezählt wird, wer **mit den Füßen** (Unterkante des Rahmens)
+im Bereich steht. Mehrere Bereiche pro Kamera möglich; kein Bereich = ganzes Bild.
+
+**Datenpunkte** pro Kamera unter `cameras.<Name>.detect`:
+
+| Datenpunkt | Bedeutung |
+| --- | --- |
+| `person` / `vehicle` / `animal` | `true`, solange erkannt (bis die Haltezeit nach der letzten Erkennung abgelaufen ist) |
+| `personCount` / `vehicleCount` / `animalCount` | wie viele gerade im Bild / Bereich sind |
+| `last`, `lastTime` | z. B. „2 × Person (87 %)“ und wann |
+| `photoUrl` | Foto der letzten Erkennung mit roten Rahmen (für Push / SmartView) |
+| `zones` | die eingezeichneten Bereiche (JSON) |
+
+**Beispiele:** Logik-Adapter: `cameras.eingang.detect.person` → Ausgang Außenlicht (bleibt an, solange jemand da ist).
+SmartView: Push-Regel „wird Ein“ auf `cameras.eingang.detect.person`.
+
 ## Datenpunkte
 
 | Datenpunkt | Bedeutung |
@@ -311,4 +345,5 @@ getestet: Klingeln, Abnehmen, Ton in beide Richtungen, Türcode, Auflegen, Abbru
 
 ## Lizenz
 
-MIT
+MIT. Das Erkennungsmodell `models/yolox_nano.onnx` stammt aus YOLOX von Megvii (Apache-2.0,
+https://github.com/Megvii-BaseDetection/YOLOX); die KI-Laufzeit onnxruntime-web von Microsoft (MIT).

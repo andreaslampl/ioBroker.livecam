@@ -72,5 +72,19 @@
   "Door code": "Türcode",
   "Door URL": "Tür-URL",
   "UDP ports for the sound": "UDP-Ports für den Ton",
-  "e.g. 40000-40019 (empty = random). Allow these UDP ports in the firewall: from the intercom and from the phones / touch PC to ioBroker": "z. B. 40000-40019 (leer = zufällig). Diese UDP-Ports in der Firewall erlauben: von der Sprechstelle und von Handys / Touch-PC zum ioBroker"
+  "e.g. 40000-40019 (empty = random). Allow these UDP ports in the firewall: from the intercom and from the phones / touch PC to ioBroker": "z. B. 40000-40019 (leer = zufällig). Diese UDP-Ports in der Firewall erlauben: von der Sprechstelle und von Handys / Touch-PC zum ioBroker",
+  "AI detection": "KI-Erkennung",
+  "off": "aus",
+  "Persons": "Personen",
+  "Persons + vehicles": "Personen + Fahrzeuge",
+  "Persons + vehicles + animals": "Personen + Fahrzeuge + Tiere",
+  "Vehicles": "Fahrzeuge",
+  "Persons + animals": "Personen + Tiere",
+  "Per camera in the camera table: column 'AI detection'. The model only runs when the picture changes (video cameras: key frames only), at most once per second and camera. Results: cameras.<name>.detect.* (person / vehicle / animal, counts, photo with boxes). Areas: page /zones of this adapter (link in info.zonesUrl).": "Pro Kamera in der Kameratabelle: Spalte „KI-Erkennung“. Die KI rechnet nur, wenn sich das Bild ändert (Video-Kameras: nur Schlüsselbilder), höchstens einmal pro Sekunde und Kamera. Ergebnisse: cameras.<Name>.detect.* (Person / Fahrzeug / Tier, Anzahl, Foto mit Rahmen). Bereiche einzeichnen: Seite /zones dieses Adapters (Link im Datenpunkt info.zonesUrl).",
+  "Minimum certainty (%)": "Mindest-Sicherheit (%)",
+  "Lower = finds more, but more false alarms": "Niedriger = findet mehr, aber mehr Fehlalarme",
+  "Stays on after the last detection (s)": "Bleibt nach der letzten Erkennung an (s)",
+  "e.g. light on as long as somebody is there": "z. B. Licht an, solange jemand da ist",
+  "At most one check per camera every (s)": "Höchstens eine Prüfung pro Kamera alle (s)",
+  "Higher = less CPU": "Höher = weniger CPU-Last"
 }

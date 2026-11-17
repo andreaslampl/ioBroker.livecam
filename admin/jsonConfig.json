@@ -118,8 +118,85 @@
               "title": "Always on",
               "width": "5%",
               "default": false
+            },
+            {
+              "type": "select",
+              "attr": "detect",
+              "title": "AI detection",
+              "width": "9%",
+              "default": "",
+              "options": [
+                {
+                  "label": "off",
+                  "value": ""
+                },
+                {
+                  "label": "Persons",
+                  "value": "person"
+                },
+                {
+                  "label": "Persons + vehicles",
+                  "value": "person,vehicle"
+                },
+                {
+                  "label": "Persons + vehicles + animals",
+                  "value": "person,vehicle,animal"
+                },
+                {
+                  "label": "Vehicles",
+                  "value": "vehicle"
+                },
+                {
+                  "label": "Persons + animals",
+                  "value": "person,animal"
+                }
+              ]
             }
           ]
+        }
+      }
+    },
+    "tabDetect": {
+      "type": "panel",
+      "label": "AI detection",
+      "items": {
+        "detectHelp": {
+          "type": "staticText",
+          "text": "Per camera in the camera table: column 'AI detection'. The model only runs when the picture changes (video cameras: key frames only), at most once per second and camera. Results: cameras.<name>.detect.* (person / vehicle / animal, counts, photo with boxes). Areas: page /zones of this adapter (link in info.zonesUrl).",
+          "xs": 12
+        },
+        "detectScore": {
+          "type": "number",
+          "label": "Minimum certainty (%)",
+          "default": 55,
+          "min": 20,
+          "max": 95,
+          "help": "Lower = finds more, but more false alarms",
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        },
+        "detectHold": {
+          "type": "number",
+          "label": "Stays on after the last detection (s)",
+          "default": 20,
+          "min": 2,
+          "max": 3600,
+          "help": "e.g. light on as long as somebody is there",
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        },
+        "detectInterval": {
+          "type": "number",
+          "label": "At most one check per camera every (s)",
+          "default": 1,
+          "min": 0.3,
+          "max": 30,
+          "help": "Higher = less CPU",
+          "xs": 12,
+          "sm": 6,
+          "md": 3
         }
       }
     },

@@ -1,6 +1,6 @@
 {
   "name": "iobroker.livecam",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Robust live images (MJPEG) from RTSP, ONVIF and HTTP cameras for ioBroker VIS-2",
   "author": "andreaslampl",
   "license": "MIT",
@@ -32,13 +32,15 @@
     "main.js",
     "io-package.json",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "models/"
   ],
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.2.3",
+    "onnxruntime-web": "1.31.1",
     "werift": "0.24.4",
     "ws": "^8.18.0"
   },
