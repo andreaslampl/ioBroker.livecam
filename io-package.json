@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.8.0",
+    "version": "0.8.1",
     "news": {
+      "0.8.1": {
+        "en": "Links to all pages in the admin (link symbol of the instance) and on the overview page; the access key is asked once and remembered in the browser",
+        "de": "Links zu allen Seiten im Admin (Link-Symbol der Instanz) und auf der Übersichtsseite; der Zugriffsschlüssel wird einmal abgefragt und im Browser gemerkt"
+      },
       "0.8.0": {
         "en": "Face recognition of the household's people with liveness detection (page /faces: photos or live at a camera), door release only after two recognitions alive; unknown faces are never stored",
         "de": "Gesichtserkennung der Bewohner mit Lebenderkennung (Seite /faces: Fotos oder live an der Kamera), Tür-Freigabe nur nach zweimaliger Erkennung und lebend; fremde Gesichter werden nie gespeichert"
@@ -132,7 +136,44 @@
         "admin": ">=6.0.0"
       }
     ],
-    "messagebox": true
+    "messagebox": true,
+    "localLinks": {
+      "_default": {
+        "link": "http://%ip%:%port%/",
+        "name": {
+          "en": "Overview",
+          "de": "Übersicht"
+        }
+      },
+      "faces": {
+        "link": "http://%ip%:%port%/faces",
+        "name": {
+          "en": "Teach in faces",
+          "de": "Gesichter einlernen"
+        }
+      },
+      "zones": {
+        "link": "http://%ip%:%port%/zones",
+        "name": {
+          "en": "Detection areas",
+          "de": "Erkennungs-Bereiche"
+        }
+      },
+      "view": {
+        "link": "http://%ip%:%port%/view",
+        "name": {
+          "en": "Camera wall",
+          "de": "Kamerawand"
+        }
+      },
+      "tones": {
+        "link": "http://%ip%:%port%/tones",
+        "name": {
+          "en": "Ring tones",
+          "de": "Klingeltöne"
+        }
+      }
+    }
   },
   "native": {
     "port": 8095,

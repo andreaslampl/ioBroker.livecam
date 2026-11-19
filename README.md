@@ -80,6 +80,13 @@ Bitte im Handbuch der Kamera prüfen, sie unterscheiden sich je nach Modell und 
   *System → ONVIF* anlegen).
 - **2N:** Die HTTP-API und ein Benutzer mit Kamera-Recht müssen in der 2N-Weboberfläche aktiviert sein.
 
+## Seiten des Adapters
+
+Im ioBroker-Admin hat die livecam-Instanz ein **Link-Symbol** mit allen Seiten: Übersicht, Kamerawand, Erkennungs-Bereiche,
+Gesichter einlernen und Klingeltöne. Die Übersichtsseite `http://<ioBroker-IP>:8095/` hat oben dieselben Links. Ist ein
+Zugriffsschlüssel gesetzt, fragt der Browser ihn beim ersten Öffnen einmal ab und merkt ihn sich (Cookie). Links mit
+`?key=…` funktionieren weiterhin, z. B. für VIS-2.
+
 ## In VIS-2 anzeigen
 
 Kurzfassung zum Ausdrucken: [ANLEITUNG-VIS.md](ANLEITUNG-VIS.md)
@@ -339,7 +346,8 @@ Tür-Freigabe.
 
 1. Kameratabelle: Die Kamera braucht die Personen-Erkennung. Dazu die Spalte **„Gesichter“** ankreuzen.
 2. Im Reiter „Webserver“ einen **Zugriffsschlüssel** setzen (Pflicht, sonst könnte jeder im Netz ein Gesicht einlernen).
-3. Die Seite **`/faces`** öffnen (Adresse steht in `info.facesUrl`). Dort Personen anlegen und einlernen:
+3. Die Seite **„Gesichter einlernen“** öffnen: im ioBroker-Admin beim **Link-Symbol der livecam-Instanz**, auf der Übersichtsseite
+   von livecam oder über die Adresse in `info.facesUrl`. Beim ersten Mal fragt der Browser nach dem Zugriffsschlüssel und merkt ihn sich. Dort Personen anlegen und einlernen:
    - **Fotos hinzufügen:** 3–10 Fotos von vorne, mit und ohne Brille. Am Handy direkt aus der Fotomediathek.
    - **An Kamera einlernen:** vor die Kamera stellen, Start drücken und den Kopf langsam etwas drehen (15 s).
    - **„darf Tür öffnen“** nur bei Personen ankreuzen, die die Tür öffnen dürfen.

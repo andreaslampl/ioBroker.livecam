@@ -6,6 +6,11 @@
       "type": "panel",
       "label": "Cameras",
       "items": {
+        "pagesHelp": {
+          "type": "staticText",
+          "text": "Pages of this adapter (overview, camera wall, detection areas, faces, ring tones): link symbol of the livecam instance in the admin, or http://<ioBroker-IP>:<port>/. With an access key the browser asks for it once.",
+          "xs": 12
+        },
         "camHelp": {
           "type": "staticText",
           "text": "Type ONVIF: enter the IP address, the stream is found automatically. Type Stream: RTSP or HTTP-MJPEG URL. Type Snapshot: URL of a single JPEG image. Profile 0 = main stream, 1 = usually a lighter sub stream (recommended).",

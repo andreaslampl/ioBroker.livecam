@@ -122,5 +122,6 @@
   "needed for the door release": "nötig für die Tür-Freigabe",
   "Liveness at least (%)": "Lebenderkennung mindestens (%)",
   "Report unknown faces": "Unbekannte Gesichter melden",
-  "detect.face = 'unbekannt' (nothing is stored)": "detect.face = „unbekannt“ (es wird nichts gespeichert)"
+  "detect.face = 'unbekannt' (nothing is stored)": "detect.face = „unbekannt“ (es wird nichts gespeichert)",
+  "Pages of this adapter (overview, camera wall, detection areas, faces, ring tones): link symbol of the livecam instance in the admin, or http://<ioBroker-IP>:<port>/. With an access key the browser asks for it once.": "Seiten dieses Adapters (Übersicht, Kamerawand, Erkennungs-Bereiche, Gesichter, Klingeltöne): Link-Symbol der livecam-Instanz im Admin, oder http://<ioBroker-IP>:<Port>/. Mit Zugriffsschlüssel fragt der Browser ihn einmal ab."
 }

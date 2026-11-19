@@ -220,3 +220,40 @@ test('adapter: /faces needs the key, people via the API, door release only alive
     assert.ok(!adapter.logs.filter(l => /Gesicht/.test(l)).join('\n').includes('geheim'), 'key not in the face log lines');
     assert.match(s['info.facesUrl'].val, /\/faces\?key=geheim$/);
 });
+
+test('server: key asked once on a login page, remembered as cookie; pictures without key refused', async t => {
+    const { CamServer } = require('../lib/server');
+    const log = { info() {}, warn() {}, debug() {}, error() {} };
+    const srv = new CamServer({ sources: new Map(), accessKey: 'geheim', log, zones: { cameras: () => [{ id: 'a' }], save: async () => [] }, faces: { enabled: () => true, list: () => [], cameras: () => [] } });
+    const port = 40000 + Math.floor(Math.random() * 10000);
+    await srv.listen(port);
+    t.after(() => srv.close());
+    const get = (p, headers = {}, opts = {}) => fetch(`http://127.0.0.1:${port}${p}`, { headers, redirect: 'manual', ...opts });
+    let r = await get('/faces');
+    assert.equal(r.status, 401);
+    assert.match(await r.text(), /Zugriffsschlüssel/);
+    assert.equal((await get('/cam/x.jpg')).status, 403);
+    const form = (key, next) => ({ method: 'POST', body: new URLSearchParams({ key, next }).toString(), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+    r = await fetch(`http://127.0.0.1:${port}/login`, { ...form('falsch', '/faces'), redirect: 'manual' });
+    assert.equal(r.status, 403);
+    r = await fetch(`http://127.0.0.1:${port}/login`, { ...form('geheim', 'https://evil.example/'), redirect: 'manual' });
+    assert.equal(r.status, 303);
+    assert.equal(r.headers.get('location'), '/', 'no redirect to other sites');
+    const cookie = r.headers.get('set-cookie').split(';')[0];
+    assert.match(cookie, /^lc_auth=[0-9a-f]{32}$/);
+    assert.ok(!cookie.includes('geheim'), 'the key itself is not in the cookie');
+    r = await get('/faces/data', { cookie });
+    assert.equal(r.status, 200);
+    r = await get('/', { cookie });
+    assert.match(await r.text(), /href="\/faces">Gesichter einlernen/);
+    // a link with ?key= sets the cookie as well
+    r = await get('/zones?key=geheim');
+    assert.equal(r.status, 200);
+    assert.match(r.headers.get('set-cookie'), /^lc_auth=/);
+    // 5 wrong keys: pause
+    for (let i = 0; i < 5; i++) {
+        await fetch(`http://127.0.0.1:${port}/login`, { ...form('x', '/'), redirect: 'manual' });
+    }
+    r = await fetch(`http://127.0.0.1:${port}/login`, { ...form('geheim', '/'), redirect: 'manual' });
+    assert.match(await r.text(), /Zu viele Versuche/);
+});

@@ -122,5 +122,6 @@
   "needed for the door release": "needed for the door release",
   "Liveness at least (%)": "Liveness at least (%)",
   "Report unknown faces": "Report unknown faces",
-  "detect.face = 'unbekannt' (nothing is stored)": "detect.face = 'unbekannt' (nothing is stored)"
+  "detect.face = 'unbekannt' (nothing is stored)": "detect.face = 'unbekannt' (nothing is stored)",
+  "Pages of this adapter (overview, camera wall, detection areas, faces, ring tones): link symbol of the livecam instance in the admin, or http://<ioBroker-IP>:<port>/. With an access key the browser asks for it once.": "Pages of this adapter (overview, camera wall, detection areas, faces, ring tones): link symbol of the livecam instance in the admin, or http://<ioBroker-IP>:<port>/. With an access key the browser asks for it once."
 }
