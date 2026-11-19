@@ -230,6 +230,17 @@
           "sm": 6,
           "md": 3
         },
+        "detectPark": {
+          "type": "number",
+          "label": "Ignore parked vehicles after (min)",
+          "default": 5,
+          "min": 0,
+          "max": 1440,
+          "help": "a vehicle at the same place for longer is no detection any more (no box, no push); 0 = never",
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        },
         "plateHeader": {
           "type": "header",
           "text": "Number plates of own vehicles",

@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.9.0",
+    "version": "0.9.1",
     "news": {
+      "0.9.1": {
+        "en": "Name of a recognised person on its box (SmartView); parked vehicles ignored after a set time (default 5 min)",
+        "de": "Name der erkannten Person am Rahmen (SmartView); geparkte Fahrzeuge werden nach einstellbarer Zeit ignoriert (Standard 5 min)"
+      },
       "0.9.0": {
         "en": "VMS 1.3: boxes of the VMS for SmartView (detect.boxes), REC, faces / liveness / photo-screen warning, presence vms.presence.*, inputs / outputs vms.io.* (door opener only as a pulse button)",
         "de": "VMS 1.3: Rahmen der VMS für SmartView (detect.boxes), REC, Gesichter / Lebenderkennung / Foto-Bildschirm-Warnung, Anwesenheit vms.presence.*, Ein-/Ausgänge vms.io.* (Türöffner nur als Impuls-Taste)"
@@ -215,7 +219,8 @@
     "faceMinSize": 50,
     "faceLive": true,
     "faceLiveMin": 80,
-    "faceUnknown": false
+    "faceUnknown": false,
+    "detectPark": 5
   },
   "protectedNative": [
     "accessKey",

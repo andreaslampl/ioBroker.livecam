@@ -115,3 +115,35 @@ test('real model (onnxruntime-web, WebAssembly) loads and finds nothing on an em
     assert.deepEqual(found, []);
     assert.equal(det.runs, 1);
 });
+
+test('watcher: a vehicle at the same place longer than parkMs is parked - no box, no detection; a new car counts', async () => {
+    let now = 1000000;
+    let answer = [];
+    const detector = { detect: async () => answer };
+    const w = new Watcher({ id: 'c', source: {}, detector, groups: ['person', 'vehicle'], hold: 5000, interval: 1000, parkMs: 60000, now: () => now });
+    const events = [];
+    const boxes = [];
+    w.on('detected', e => events.push(e.group));
+    w.on('boxes', b => boxes.push(JSON.parse(b)));
+    const car = { group: 'vehicle', label: 'Auto', score: 0.9, x: 0.1, y: 0.5, w: 0.3, h: 0.2 };
+    const tick = async (ms, v = 10) => {
+        now += ms;
+        w._frame(Buffer.alloc(SIZE * SIZE * 3, v), { w: 1920, h: 1080 });
+        await new Promise(r => setImmediate(r));
+    };
+    answer = [car];
+    await tick(1000, 10);
+    assert.deepEqual(events, ['vehicle'], 'arriving car is a detection');
+    for (let i = 0; i < 25; i++) {
+        await tick(3000, i % 2 ? 10 : 40); // still there (within the hold time), picture changes a bit
+    }
+    assert.deepEqual(events, ['vehicle'], 'standing car: no new detection');
+    await tick(6000, 10); // hold over
+    assert.ok(w.state.vehicle.on === false, 'parked after 1 min: off');
+    assert.deepEqual(boxes.at(-1), [], 'no box for the parked car');
+    // a second car somewhere else: new detection
+    answer = [car, { ...car, x: 0.6 }];
+    await tick(3000, 90);
+    assert.deepEqual(events, ['vehicle', 'vehicle']);
+    assert.equal(boxes.at(-1).length, 1, 'only the new car has a box');
+});

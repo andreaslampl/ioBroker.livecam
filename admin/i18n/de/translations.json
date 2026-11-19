@@ -123,5 +123,7 @@
   "Liveness at least (%)": "Lebenderkennung mindestens (%)",
   "Report unknown faces": "Unbekannte Gesichter melden",
   "detect.face = 'unbekannt' (nothing is stored)": "detect.face = „unbekannt“ (es wird nichts gespeichert)",
-  "Pages of this adapter (overview, camera wall, detection areas, faces, ring tones): link symbol of the livecam instance in the admin, or http://<ioBroker-IP>:<port>/. With an access key the browser asks for it once.": "Seiten dieses Adapters (Übersicht, Kamerawand, Erkennungs-Bereiche, Gesichter, Klingeltöne): Link-Symbol der livecam-Instanz im Admin, oder http://<ioBroker-IP>:<Port>/. Mit Zugriffsschlüssel fragt der Browser ihn einmal ab."
+  "Pages of this adapter (overview, camera wall, detection areas, faces, ring tones): link symbol of the livecam instance in the admin, or http://<ioBroker-IP>:<port>/. With an access key the browser asks for it once.": "Seiten dieses Adapters (Übersicht, Kamerawand, Erkennungs-Bereiche, Gesichter, Klingeltöne): Link-Symbol der livecam-Instanz im Admin, oder http://<ioBroker-IP>:<Port>/. Mit Zugriffsschlüssel fragt der Browser ihn einmal ab.",
+  "Ignore parked vehicles after (min)": "Geparkte Fahrzeuge ignorieren nach (min)",
+  "a vehicle at the same place for longer is no detection any more (no box, no push); 0 = never": "ein Fahrzeug, das länger am selben Platz steht, zählt nicht mehr als Erkennung (kein Rahmen, keine Meldung); 0 = nie"
 }

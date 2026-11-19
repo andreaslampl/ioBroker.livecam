@@ -173,7 +173,7 @@ test('adapter: /faces needs the key, people via the API, door release only alive
     const anna = Float32Array.from({ length: 128 }, (_, i) => Math.sin(i));
     const stranger = Float32Array.from({ length: 128 }, (_, i) => Math.cos(i * 3));
     let seen = { embed: anna, live: 0.95 };
-    adapter.faceReader.read = async () => [{ box: {}, size: 120, score: 0.9, embed: seen.embed, live: seen.live, face: new Uint8Array(112 * 112 * 3) }];
+    adapter.faceReader.read = async () => [{ box: {}, size: 120, score: 0.9, embed: seen.embed, live: seen.live, face: new Uint8Array(112 * 112 * 3), cx: 0.65, cy: 0.3 }];
     const photo = await req('POST', `/faces/person/${id}/photo`, require('./helpers').testFrames()[0]);
     assert.equal(photo.status, 200, photo.text);
     assert.equal(adapter.faceStore.get(id).samples.length, 1);
@@ -188,8 +188,16 @@ test('adapter: /faces needs the key, people via the API, door release only alive
         w.state.person = { on, count: on ? 1 : 0, last: Date.now() };
         return adapter.onDetectState(camCfg, { group: 'person', on, count: on ? 1 : 0, label: 'Person', score: 0.9 });
     };
+    // two people in the picture: the name goes onto the box with the face
+    w.lastBoxes = JSON.stringify([
+        { g: 'person', l: 'Person', s: 90, x: 0.1, y: 0.2, w: 0.1, h: 0.5 },
+        { g: 'person', l: 'Person', s: 88, x: 0.6, y: 0.2, w: 0.1, h: 0.5 },
+    ]);
     await person(true);
     await until(() => s['cameras.haustuer.detect.faceDoor'] && s['cameras.haustuer.detect.faceDoor'].val === true);
+    assert.deepEqual(JSON.parse(s['cameras.haustuer.detect.boxes'].val).map(b => b.l), ['Person', 'Anna']);
+    w.emit('boxes', JSON.stringify([{ g: 'person', l: 'Person', s: 91, x: 0.62, y: 0.21, w: 0.1, h: 0.5 }]));
+    await until(() => JSON.parse(s['cameras.haustuer.detect.boxes'].val)[0].l === 'Anna');
     assert.equal(s['cameras.haustuer.detect.face'].val, 'Anna');
     assert.equal(s['cameras.haustuer.detect.faceKnown'].val, true);
     assert.equal(s['faces.anna.present'].val, true);

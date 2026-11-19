@@ -288,6 +288,10 @@ dem Celeron J4125). Damit sie wenig Last macht:
 - Alle Kameras teilen sich ein Modell, es rechnet immer nur eine Prüfung gleichzeitig.
 Die durchschnittliche Zeit pro Prüfung steht in `info.detectMs`.
 
+**Geparkte Fahrzeuge:** Steht ein Fahrzeug länger als die eingestellte Zeit (Reiter „KI-Erkennung“, Standard 5 min, 0 = aus)
+am selben Platz, zählt es nicht mehr: kein Rahmen, `vehicle` geht aus, keine Meldung. Fährt ein anderes Auto vor, wird es
+wieder erkannt.
+
 **Bereiche:** Auf der Seite **`http://<ioBroker-IP>:8095/zones`** (Adresse in `info.zonesUrl`) auf das Kamerabild
 tippen und Ecken setzen – z. B. nur der Weg zur Haustür. Gezählt wird, wer **mit den Füßen** (Unterkante des Rahmens)
 im Bereich steht. Mehrere Bereiche pro Kamera möglich; kein Bereich = ganzes Bild.
@@ -352,7 +356,7 @@ Tür-Freigabe.
    - **An Kamera einlernen:** vor die Kamera stellen, Start drücken und den Kopf langsam etwas drehen (15 s).
    - **„darf Tür öffnen“** nur bei Personen ankreuzen, die die Tür öffnen dürfen.
 
-Sobald eine Person im Bild ist, sucht livecam alle 1,5 s nach Gesichtern (höchstens 10-mal) und vergleicht sie mit den
+Wird eine Person erkannt, steht ihr Name in SmartView am Rahmen statt „Person“. Sobald eine Person im Bild ist, sucht livecam alle 1,5 s nach Gesichtern (höchstens 10-mal) und vergleicht sie mit den
 eingelernten Personen.
 
 | Datenpunkt | Bedeutung |

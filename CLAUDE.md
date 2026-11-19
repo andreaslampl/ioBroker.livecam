@@ -92,6 +92,11 @@ existing cameras adapter lost its images after a while and needed restarts.
   and 2 hits in a row; `faceGone()` on person off. Measured (scratchpad, OpenCV zoo selfie - not committed): same person 0.94,
   others <= 0.25; liveness real 0.97-0.99, phone with frame 0.00, print 0.39, full-frame moire screen 0.89 (passes) -> README
   says faceDoor is not a sole door key. ~0.8 s per check on the dev machine. PRIVACY: unknown faces never stored / logged.
+- 0.9.1 field: owner saw only "Person" on the box after teaching in a face -> FaceReader returns the face centre `cx`/`cy`
+  (fractions of the whole picture), main `faceTags` per camera (set in onFace, cleared in faceGone) + `labelBoxes()` puts the
+  name on the person box containing it (else the nearest) for every boxes update. Owner asked to ignore cars standing long ->
+  Watcher `parkMs` (config `detectPark` min, default 5, 0 = off) + `park()`: vehicle tracks by IoU >= 0.6, parked after
+  parkMs = no box / no state / no rising edge, a place is free again 3 min after it was last seen. Tests for both.
 - 0.8.1: owner asked for the links in the adapter -> io-package `localLinks` (_default overview, faces, zones, view, tones; admin's
   link symbol), overview `/` gets a nav of the pages in use; `util.keyOk()` = ?key= or cookie `lc_auth` (sha256 of the key,
   32 hex, HttpOnly, SameSite=Lax, 1 year) for pages, API, pictures and both ws upgrades; pages without key -> login form

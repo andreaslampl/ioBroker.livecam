@@ -192,12 +192,13 @@ class Livecam extends utils.Adapter {
                 zones: parseZones(zoneState && zoneState.val),
                 minScore: Math.min(0.95, Math.max(0.2, (Number(c.detectScore) || 55) / 100)),
                 hold: Math.max(2, Number(c.detectHold) || 20) * 1000,
+                parkMs: Math.max(0, Number(c.detectPark ?? 5)) * 60000,
                 interval: Math.max(0.3, Number(c.detectInterval) || 1) * 1000,
                 ffmpegPath: (c.ffmpegPath || '').trim() || 'ffmpeg',
                 spawnFn: this.spawnFn,
             });
             w.on('state', st => this.onDetectState(cam, st).catch(err => this.log.warn(err.message)));
-            w.on('boxes', text => this.setState(`cameras.${cam.id}.detect.boxes`, text, true));
+            w.on('boxes', text => this.setState(`cameras.${cam.id}.detect.boxes`, this.labelBoxes(cam.id, text), true));
             w.on('detected', ev => this.onDetected(cam, ev).catch(err => this.log.warn(`${cam.name}: Foto: ${err.message}`)));
             w.on('error', msg => {
                 if (!old.has(`${cam.id}:${msg}`)) {
@@ -1221,7 +1222,7 @@ class Livecam extends utils.Adapter {
                         }
                         continue;
                     }
-                    hit = { ...m, live: f.live };
+                    hit = { ...m, live: f.live, cx: f.cx, cy: f.cy };
                     break;
                 }
                 if (!hit) {
@@ -1255,7 +1256,38 @@ class Livecam extends utils.Adapter {
         }
     }
 
+    /** the recognised person's name on the person box nearest to the face (SmartView shows it) */
+    labelBoxes(camId, text) {
+        const tag = this.faceTags && this.faceTags.get(camId);
+        if (!tag) {
+            return text;
+        }
+        let list;
+        try {
+            list = JSON.parse(text);
+        } catch {
+            return text;
+        }
+        const persons = list.filter(b => b.g === 'person');
+        if (!persons.length) {
+            return text;
+        }
+        const inBox = b => tag.cx >= b.x && tag.cx <= b.x + b.w && tag.cy >= b.y && tag.cy <= b.y + b.h;
+        const dist = b => Math.hypot(b.x + b.w / 2 - tag.cx, b.y + b.h / 3 - tag.cy);
+        const best = persons.find(inBox) || persons.slice().sort((a, b) => dist(a) - dist(b))[0];
+        best.l = tag.name;
+        return JSON.stringify(list);
+    }
+
     async onFace(cam, m) {
+        this.faceTags = this.faceTags || new Map();
+        if (Number.isFinite(m.cx)) {
+            this.faceTags.set(cam.id, { name: m.name, cx: m.cx, cy: m.cy });
+            const w = this.watchers && this.watchers.get(cam.id);
+            if (w && w.lastBoxes) {
+                await this.setState(`cameras.${cam.id}.detect.boxes`, this.labelBoxes(cam.id, w.lastBoxes), true);
+            }
+        }
         const now = new Date().toISOString();
         await this.setState(`cameras.${cam.id}.detect.face`, m.name, true);
         await this.setState(`cameras.${cam.id}.detect.faceKnown`, true, true);
@@ -1285,6 +1317,9 @@ class Livecam extends utils.Adapter {
         }
         await this.setState(`cameras.${cam.id}.detect.faceKnown`, false, true);
         await this.setState(`cameras.${cam.id}.detect.faceDoor`, false, true);
+        if (this.faceTags) {
+            this.faceTags.delete(cam.id);
+        }
         for (const [slug, camId] of this.facePresent || []) {
             if (camId === cam.id) {
                 this.facePresent.delete(slug);
