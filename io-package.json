@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.8.1",
+    "version": "0.9.0",
     "news": {
+      "0.9.0": {
+        "en": "VMS 1.3: boxes of the VMS for SmartView (detect.boxes), REC, faces / liveness / photo-screen warning, presence vms.presence.*, inputs / outputs vms.io.* (door opener only as a pulse button)",
+        "de": "VMS 1.3: Rahmen der VMS für SmartView (detect.boxes), REC, Gesichter / Lebenderkennung / Foto-Bildschirm-Warnung, Anwesenheit vms.presence.*, Ein-/Ausgänge vms.io.* (Türöffner nur als Impuls-Taste)"
+      },
       "0.8.1": {
         "en": "Links to all pages in the admin (link symbol of the instance) and on the overview page; the access key is asked once and remembered in the browser",
         "de": "Links zu allen Seiten im Admin (Link-Symbol der Instanz) und auf der Übersichtsseite; der Zugriffsschlüssel wird einmal abgefragt und im Browser gemerkt"

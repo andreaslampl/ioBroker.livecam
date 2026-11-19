@@ -219,3 +219,71 @@ test('adapter: without a VMS nothing of it is created', async t => {
     assert.deepEqual(Object.keys(adapter.objects).filter(k => k.startsWith('vms')), []);
     assert.equal(adapter.vms, null);
 });
+
+test('adapter: VMS 1.3 - boxes for SmartView, faces / presence, spoof, inputs / outputs, door only as pulse', { skip: !hasFfmpeg() }, async t => {
+    const vms = await startFakeVms({ rtsp: false });
+    t.after(() => vms.close());
+    const port = 40000 + Math.floor(Math.random() * 10000);
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lc-vms13-'));
+    t.after(() => fs.rmSync(dataDir, { recursive: true, force: true }));
+    const adapter = require('../main.js')({
+        config: { port, publicHost: '127.0.0.1', cameras: [], vmsUrl: vms.url, vmsKey: vms.key, vmsImport: true, vmsEvents: true },
+    });
+    adapter.dataDir = dataDir;
+    adapter.emit('ready');
+    const s = adapter.states;
+    await until(() => s['vms.connection'] && s['vms.connection'].val === true);
+    t.after(() => new Promise(resolve => adapter.emit('unload', resolve)));
+
+    // inputs / outputs from /api/io/state
+    await until(() => s['vms.io.handy_zuhause.on']);
+    assert.equal(adapter.objects['vms.io.handy_zuhause.on'].common.write, true, 'virtual channel writable');
+    assert.equal(adapter.objects['vms.io.klingel.on'].common.write, false, 'input read only');
+    assert.equal(adapter.objects['vms.io.tuer_sprechstelle.on'].common.write, false, 'door opener never as a switch');
+    assert.equal(adapter.objects['vms.io.tuer_sprechstelle.open'].common.role, 'button');
+    await adapter.onStateChange(`${adapter.namespace}.vms.io.handy_zuhause.on`, { val: true, ack: false });
+    await adapter.onStateChange(`${adapter.namespace}.vms.io.tuer_sprechstelle.on`, { val: true, ack: false });
+    await adapter.onStateChange(`${adapter.namespace}.vms.io.tuer_sprechstelle.open`, { val: true, ack: false });
+    await adapter.onStateChange(`${adapter.namespace}.vms.io.klingel.on`, { val: true, ack: false });
+    assert.deepEqual(vms.ioSets, [
+        { channel: 'handy_zuhause', action: 'on' },
+        { channel: 'tuer_sprechstelle', action: 'pulse' },
+    ]);
+    assert.deepEqual(s['vms.io.handy_zuhause.on'], { val: true, ack: true });
+    assert.deepEqual(s['vms.io.tuer_sprechstelle.open'], { val: false, ack: true });
+    vms.push('io', { channel: 'klingel', name: 'Klingeltaster', on: true });
+    await until(() => s['vms.io.klingel.on'].val === true);
+
+    // state with boxes, faces, rec, spoof
+    vms.push('state', {
+        camera: 'einfahrt', name: 'Einfahrt', enabled: true, online: true, recording: true, rec: true, motion: false, objects: ['person'],
+        boxes: [
+            { kind: 'person', label: 'Person', score: 0.91, x: 0.4123, y: 0.23, w: 0.081, h: 0.402, name: 'Andreas', live: true },
+            { kind: 'car', label: 'Auto', score: 0.8, x: 0.1, y: 0.5, w: 0.3, h: 0.2, still: true },
+        ],
+        faces: ['Andreas'], faces_live: ['Andreas'], spoof: false,
+    });
+    await until(() => s['cameras.einfahrt.detect.boxes'] && s['cameras.einfahrt.detect.boxes'].val !== '[]');
+    assert.deepEqual(JSON.parse(s['cameras.einfahrt.detect.boxes'].val), [
+        { g: 'person', l: 'Andreas', s: 91, x: 0.412, y: 0.23, w: 0.081, h: 0.402 },
+        { g: 'vehicle', l: 'Auto', s: 80, x: 0.1, y: 0.5, w: 0.3, h: 0.2, st: 1 },
+    ]);
+    assert.equal(s['cameras.einfahrt.detect.person'].val, true);
+    assert.equal(s['vms.cameras.einfahrt.faces'].val, 'Andreas');
+    assert.equal(s['vms.cameras.einfahrt.rec'].val, true);
+    await until(() => s['vms.presence.andreas.present'] && s['vms.presence.andreas.present'].val === true);
+    assert.equal(s['vms.presence.andreas.lastCamera'].val, 'Einfahrt');
+    // face event: photo / screen
+    vms.push('face', { id: 9, camera: 'einfahrt', camera_name: 'Einfahrt', face: '', face_live: false, start: 1794929811 });
+    await until(() => s['vms.cameras.einfahrt.lastFaceLive'] && s['vms.cameras.einfahrt.lastFaceLive'].val === false);
+    assert.equal(s['vms.cameras.einfahrt.lastFace'].val, '');
+    // event photo -> detect.photoUrl (SmartView's message photo)
+    vms.push('event', { id: 10, camera: 'einfahrt', kind: 'person', start: 1794929812, image: '/api/push/img/10?s=x' });
+    await until(() => s['cameras.einfahrt.detect.photoUrl'] && s['cameras.einfahrt.detect.photoUrl'].val);
+    assert.equal(s['cameras.einfahrt.detect.photoUrl'].val, `${vms.url}/api/push/img/10?s=x`);
+    // person gone
+    vms.push('state', { camera: 'einfahrt', name: 'Einfahrt', objects: [], boxes: [], faces: [], faces_live: [] });
+    await until(() => s['vms.presence.andreas.present'].val === false);
+    assert.equal(s['cameras.einfahrt.detect.boxes'].val, '[]');
+    assert.equal(s['cameras.einfahrt.detect.person'].val, false);
+});

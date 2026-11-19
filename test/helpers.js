@@ -154,7 +154,12 @@ const until = async (cond, ms = 15000) => {
  */
 async function startFakeVms({ key = 'alvms_test', rtsp = false } = {}) {
     const frames = testFrames();
-    const vms = { requests: [], puts: [], external: [], clients: new Set(), rtsp, connects: 0 };
+    const vms = { requests: [], puts: [], external: [], ioSets: [], clients: new Set(), rtsp, connects: 0 };
+    vms.io = {
+        tuer_sprechstelle: { name: 'Türöffner', kind: 'output', on: false, door: true },
+        handy_zuhause: { name: 'Handy zuhause', kind: 'virtual', on: false, door: false },
+        klingel: { name: 'Klingeltaster', kind: 'input', on: false, door: false },
+    };
     vms.cameras = [
         { id: 'haustuere', name: 'Haustüre', enabled: true, host: '192.168.1.120', record: { mode: 'ai' } },
         { id: 'einfahrt', name: 'Einfahrt', enabled: true, host: '192.168.1.121', record: { mode: 'motion' } },
@@ -211,6 +216,7 @@ async function startFakeVms({ key = 'alvms_test', rtsp = false } = {}) {
                     rtsp: { main: `/${c.id}`, sub: `/${c.id}_sub` },
                 })),
                 kinds: { person: 'Person', car: 'Auto' },
+                features: { boxes: true },
                 endpoints: { state: '/api/state', stream: '/api/stream', events: '/api/events', external: '/api/events/external' },
             });
         }
@@ -227,6 +233,23 @@ async function startFakeVms({ key = 'alvms_test', rtsp = false } = {}) {
                 vms.puts.push({ id: cam.id, body: b });
                 Object.assign(cam, b.enabled === undefined ? {} : { enabled: b.enabled }, b.record ? { record: { ...cam.record, ...b.record } } : {});
                 json(res, 200, cam);
+            });
+        }
+        if (u.pathname === '/api/io/state') {
+            return json(res, 200, vms.io);
+        }
+        const io = /^\/api\/io\/channels\/([^/]+)\/set$/.exec(u.pathname);
+        if (io && req.method === 'POST') {
+            return body().then(b => {
+                const ch = vms.io[decodeURIComponent(io[1])];
+                if (!ch) {
+                    return json(res, 404, { error: 'not found' });
+                }
+                vms.ioSets.push({ channel: io[1], ...b });
+                if (b.action !== 'pulse') {
+                    ch.on = b.action === 'on';
+                }
+                json(res, 200, { ok: true });
             });
         }
         if (u.pathname === '/api/events/external' && req.method === 'POST') {

@@ -109,6 +109,15 @@ existing cameras adapter lost its images after a while and needed restarts.
   `vmsRing()` on intercom 'ring' (setting > VMS id of the ring camera > VMS camera whose JSON contains the station IP).
   Key: encryptedNative + protectedNative, `key=` redacted in source/watch logs. Nothing created without url + key.
   Tests: `startFakeVms()` in test/helpers.js, test/vms.test.js. Not yet against the real VMS.
+  0.9.0 (owner sent ADAPTER-AUFTRAG.md + API.md of VMS 1.3.1): state `rec`, `faces`/`faces_live` -> faces/facesLive (comma
+  text) + `vmsPresence()` (vms.presence.<slug>.present/lastSeen/lastCamera = union over cameras), `spoof`; SSE `face` ->
+  lastFace/lastFaceLive (null = not checked)/lastFaceTime; `boxes` (features.boxes) -> `vmsBoxes()` writes livecam format
+  [{g,l,s,x,y,w,h,st}] (car/truck/motorcycle/bicycle -> vehicle, l = name if a person is recognised, st = still) into
+  cameras.<livecam id>.detect.boxes + person/vehicle/animal for livecam cameras with cfg.vmsId and no own Watcher
+  (`vmsBoxObjects()`), event image -> their detect.photoUrl (SmartView's message photo). IO: `vmsIo()` GET /api/io/state on
+  every (re)connect (404 = older VMS, skipped), SSE `io` -> vms.io.<slug>.{name,kind,door,on}; on writable only for
+  output/virtual without door; door -> `.open` button -> POST set {action: pulse} (never on). Not built: boxes on livecam's
+  own /view wall (SmartView draws them). Tests: fake VMS has io + features.boxes.
 - `lib/intercom.js` – bridges intercom RTP <-> browser WebRTC (werift) without transcoding; several
   stations (`stations`: name, host, camera, door) - the main one from the old single fields plus the
   `intercoms` table (e.g. Mobotix T25/T26); station picked by the caller's IP, state/ring carry its

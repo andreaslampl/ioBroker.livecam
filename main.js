@@ -31,6 +31,8 @@ function localAddress() {
 const VMS_KINDS = ['person', 'car', 'animal', 'motorcycle', 'bicycle', 'truck'];
 const VMS_KIND_DE = { person: 'Person', car: 'Auto', animal: 'Tier', motorcycle: 'Motorrad', bicycle: 'Fahrrad', truck: 'LKW' };
 const VMS_MODES = ['off', 'continuous', 'motion', 'ai'];
+/** VMS object kinds -> livecam's groups (for detect.boxes, SmartView's overlay) */
+const VMS_GROUP = { person: 'person', animal: 'animal', car: 'vehicle', truck: 'vehicle', motorcycle: 'vehicle', bicycle: 'vehicle' };
 
 class Livecam extends utils.Adapter {
     constructor(options) {
@@ -344,6 +346,13 @@ class Livecam extends utils.Adapter {
             lastPlate: [{ en: 'Last plate (own list of the VMS only)', de: 'Letztes Kennzeichen (nur aus den Listen der VMS)' }, 'string', 'text'],
             lastPlateName: [{ en: 'Name of the last plate', de: 'Name zum letzten Kennzeichen' }, 'string', 'text'],
             lastPlateKind: [{ en: 'Kind of the last plate (known / alarm / unknown)', de: 'Art des letzten Kennzeichens (known / alarm / unknown)' }, 'string', 'text'],
+            rec: [{ en: 'Really recording now (REC)', de: 'Nimmt gerade wirklich auf (REC)' }, 'boolean', 'indicator'],
+            faces: [{ en: 'Recognised people now (comma list)', de: 'Gerade erkannte Personen (Komma-Liste)' }, 'string', 'text'],
+            facesLive: [{ en: 'Recognised people with liveness passed', de: 'Erkannte Personen mit bestandener Lebenderkennung' }, 'string', 'text'],
+            spoof: [{ en: 'Photo / screen in front of the camera', de: 'Foto / Bildschirm vor der Kamera' }, 'boolean', 'indicator.alarm'],
+            lastFace: [{ en: 'Last face (name, empty = unknown)', de: 'Letztes Gesicht (Name, leer = unbekannt)' }, 'string', 'text'],
+            lastFaceLive: [{ en: 'Last face: liveness (true / false / null = not checked)', de: 'Letztes Gesicht: Lebenderkennung (true / false / null = ungeprüft)' }, 'boolean', 'indicator'],
+            lastFaceTime: [{ en: 'Time of the last face', de: 'Zeit des letzten Gesichts' }, 'string', 'date'],
         };
         for (const k of VMS_KINDS) {
             ro[k] = [{ en: `${k} detected`, de: `${VMS_KIND_DE[k]} erkannt` }, 'boolean', k === 'person' ? 'sensor.motion' : 'indicator'];
@@ -398,11 +407,17 @@ class Livecam extends utils.Adapter {
         }
         this.subscribeStates('vms.cameras.*.recordMode');
         this.subscribeStates('vms.cameras.*.enabled');
+        this.subscribeStates('vms.io.*.on');
+        this.subscribeStates('vms.io.*.open');
+        await this.extendObject('vms.presence', { type: 'channel', common: { name: { en: 'Presence (faces of the VMS)', de: 'Anwesenheit (Gesichter der VMS)' } }, native: {} });
+        await this.extendObject('vms.io', { type: 'channel', common: { name: { en: 'Inputs / outputs of the VMS', de: 'Ein-/Ausgänge der VMS' } }, native: {} });
+        await this.vmsBoxObjects();
         this.vms.on('connection', (on, why) => {
             this.setState('vms.connection', on, true);
             if (on) {
                 this.log.info('VMS: Live-Kanal verbunden');
                 this.vmsSettings().catch(err => this.log.debug(`VMS: Einstellungen: ${err.message}`));
+                this.vmsIo().catch(err => this.log.debug(`VMS: Ein-/Ausgänge: ${err.message}`));
             } else {
                 this.log.warn(`VMS: Live-Kanal getrennt (${why}) – neuer Versuch in ${Math.round(this.vms.backoff / 1000)} s`);
             }
@@ -431,7 +446,202 @@ class Livecam extends utils.Adapter {
         }
     }
 
+    // ---- boxes for SmartView: VMS cameras shown in livecam get cameras.<id>.detect.boxes / person / vehicle / animal ----
+
+    /** livecam cameras showing a VMS camera without livecam's own AI: VMS id -> [livecam ids] */
+    async vmsBoxObjects() {
+        this.vmsBoxCams = new Map();
+        for (const src of this.sources.values()) {
+            const vid = src.cfg.vmsId;
+            if (!vid || (this.watchers && this.watchers.has(src.id))) {
+                continue;
+            }
+            this.vmsBoxCams.set(vid, [...(this.vmsBoxCams.get(vid) || []), src.id]);
+            const pre = `cameras.${src.id}.detect`;
+            await this.extendObject(pre, { type: 'channel', common: { name: { en: 'AI detection (from the VMS)', de: 'KI-Erkennung (von der VMS)' } }, native: {} });
+            const st = {
+                boxes: [{ en: 'Current boxes (JSON, fractions of the picture)', de: 'Aktuelle Rahmen (JSON, Anteile des Bildes)' }, 'string', 'json', '[]'],
+                person: [{ en: 'Person detected', de: 'Person erkannt' }, 'boolean', 'sensor.motion', false],
+                vehicle: [{ en: 'Vehicle detected', de: 'Fahrzeug erkannt' }, 'boolean', 'indicator', false],
+                animal: [{ en: 'Animal detected', de: 'Tier erkannt' }, 'boolean', 'indicator', false],
+                photoUrl: [{ en: 'Photo of the last event (VMS, signed link)', de: 'Foto des letzten Ereignisses (VMS, signierter Link)' }, 'string', 'url.cam', ''],
+            };
+            for (const [key, [name, type, role, def]] of Object.entries(st)) {
+                await this.extendObject(`${pre}.${key}`, { type: 'state', common: { name, type, role, read: true, write: false, def }, native: {} });
+            }
+            await this.setState(`${pre}.boxes`, '[]', true);
+        }
+    }
+
+    async vmsBoxes(vid, boxes) {
+        const ids = this.vmsBoxCams && this.vmsBoxCams.get(vid);
+        if (!ids || !Array.isArray(boxes)) {
+            return;
+        }
+        const r = v => Math.round(Number(v) * 1000) / 1000;
+        const list = boxes
+            .filter(b => b && VMS_GROUP[b.kind])
+            .slice(0, 20)
+            .map(b => ({ g: VMS_GROUP[b.kind], l: b.name || b.label || VMS_KIND_DE[b.kind] || b.kind, s: Math.round((Number(b.score) || 0) * 100), x: r(b.x), y: r(b.y), w: r(b.w), h: r(b.h), ...(b.still ? { st: 1 } : {}) }));
+        const text = JSON.stringify(list);
+        for (const id of ids) {
+            await this.setState(`cameras.${id}.detect.boxes`, text, true);
+            for (const g of ['person', 'vehicle', 'animal']) {
+                await this.setState(`cameras.${id}.detect.${g}`, list.some(b => b.g === g), true);
+            }
+        }
+    }
+
+    // ---- presence: vms.presence.<name> while a camera of the VMS sees the person ----
+
+    async vmsPresence(camSlug, camName, faces) {
+        this.vmsFaces = this.vmsFaces || new Map();
+        this.vmsFaces.set(camSlug, { name: camName, faces: faces.map(String).filter(Boolean) });
+        const now = new Map(); // name -> camera name
+        for (const { name, faces: f } of this.vmsFaces.values()) {
+            for (const n of f) {
+                now.set(n, name);
+            }
+        }
+        this.vmsHere = this.vmsHere || new Map(); // slug -> name
+        for (const [n, cam] of now) {
+            const slug = cameraId(n, 0);
+            if (!this.vmsHere.has(slug)) {
+                await this.extendObject(`vms.presence.${slug}`, { type: 'channel', common: { name: n }, native: {} });
+                const st = {
+                    present: [{ en: 'Is there', de: 'Ist da' }, 'boolean', 'sensor.motion'],
+                    lastSeen: [{ en: 'Last seen', de: 'Zuletzt gesehen' }, 'string', 'date'],
+                    lastCamera: [{ en: 'Last camera', de: 'Letzte Kamera' }, 'string', 'text'],
+                };
+                for (const [key, [name, type, role]] of Object.entries(st)) {
+                    await this.extendObject(`vms.presence.${slug}.${key}`, { type: 'state', common: { name, type, role, read: true, write: false }, native: {} });
+                }
+                await this.setState(`vms.presence.${slug}.present`, true, true);
+                this.vmsHere.set(slug, n);
+            }
+            await this.setState(`vms.presence.${slug}.lastSeen`, new Date().toISOString(), true);
+            await this.setState(`vms.presence.${slug}.lastCamera`, cam, true);
+        }
+        for (const [slug, n] of this.vmsHere) {
+            if (!now.has(n)) {
+                this.vmsHere.delete(slug);
+                await this.setState(`vms.presence.${slug}.present`, false, true);
+            }
+        }
+    }
+
+    // ---- inputs / outputs: vms.io.<channel> ----
+
+    async vmsIoObjects(id, ch) {
+        this.vmsIoIds = this.vmsIoIds || new Map();
+        const slug = String(id).replace(/[^A-Za-z0-9_-]/g, '_') || '_';
+        const door = Boolean(ch.door);
+        const writable = !door && ['output', 'virtual'].includes(String(ch.kind || ''));
+        const known = this.vmsIoIds.get(slug);
+        if (known && known.door === door && known.writable === writable) {
+            return slug;
+        }
+        this.vmsIoIds.set(slug, { id, door, writable });
+        const pre = `vms.io.${slug}`;
+        await this.extendObject(pre, { type: 'channel', common: { name: ch.name || id }, native: { channel: id } });
+        await this.extendObject(`${pre}.name`, { type: 'state', common: { name: 'Name', type: 'string', role: 'text', read: true, write: false }, native: {} });
+        await this.extendObject(`${pre}.kind`, { type: 'state', common: { name: { en: 'Kind (input / output / virtual)', de: 'Art (input / output / virtual)' }, type: 'string', role: 'text', read: true, write: false }, native: {} });
+        await this.extendObject(`${pre}.door`, { type: 'state', common: { name: { en: 'Door opener', de: 'Türöffner' }, type: 'boolean', role: 'indicator', read: true, write: false }, native: {} });
+        await this.extendObject(`${pre}.on`, {
+            type: 'state',
+            common: {
+                name: writable ? { en: 'On (switches in the VMS)', de: 'An (schaltet in der VMS)' } : { en: 'On', de: 'An' },
+                type: 'boolean',
+                role: writable ? 'switch' : 'sensor',
+                read: true,
+                write: writable,
+            },
+            native: {},
+        });
+        if (door) {
+            // a door opener only as a button with a pulse, never permanently on
+            await this.extendObject(`${pre}.open`, {
+                type: 'state',
+                common: { name: { en: 'Open the door (pulse)', de: 'Tür öffnen (Impuls)' }, type: 'boolean', role: 'button', read: false, write: true },
+                native: {},
+            });
+        } else {
+            await this.delObjectAsync(`${pre}.open`).catch(() => {});
+        }
+        return slug;
+    }
+
+    async vmsIoValue(id, ch) {
+        const slug = await this.vmsIoObjects(id, ch);
+        if (ch.name !== undefined) {
+            await this.setState(`vms.io.${slug}.name`, String(ch.name || id), true);
+        }
+        if (ch.kind !== undefined) {
+            await this.setState(`vms.io.${slug}.kind`, String(ch.kind || ''), true);
+        }
+        await this.setState(`vms.io.${slug}.door`, Boolean(ch.door), true);
+        if (typeof ch.on === 'boolean') {
+            await this.setState(`vms.io.${slug}.on`, ch.on, true);
+        }
+    }
+
+    async vmsIo() {
+        let all;
+        try {
+            all = await this.vms.ioState();
+        } catch (err) {
+            if (err.status === 404) {
+                return; // VMS without inputs / outputs
+            }
+            throw err;
+        }
+        for (const [id, ch] of Object.entries(all || {})) {
+            if (ch && typeof ch === 'object') {
+                await this.vmsIoValue(id, ch);
+            }
+        }
+    }
+
+    /** vms.io.<ch>.on / .open written in ioBroker -> POST /api/io/channels/<ch>/set */
+    async vmsIoWrite(slug, key, val) {
+        const ch = this.vmsIoIds && this.vmsIoIds.get(slug);
+        if (!this.vms || !ch) {
+            return;
+        }
+        const on = val === true || val === 'true' || val === 1;
+        if (key === 'open' ? !ch.door || !on : !ch.writable) {
+            if (key === 'on' && !ch.writable) {
+                this.log.warn(`VMS: ${ch.id} kann man nicht schalten${ch.door ? ' (Türöffner: Datenpunkt open)' : ' (Eingang)'}`);
+            }
+            const st = await this.getStateAsync(`vms.io.${slug}.on`).catch(() => null);
+            if (key === 'on') {
+                await this.setState(`vms.io.${slug}.on`, st && st.ack ? st.val : null, true);
+            }
+            return;
+        }
+        const action = key === 'open' ? 'pulse' : on ? 'on' : 'off';
+        try {
+            await this.vms.ioSet(ch.id, action);
+            this.log.info(`VMS: ${ch.id} ${action === 'pulse' ? 'Tür geöffnet (Impuls)' : action === 'on' ? 'ein' : 'aus'}`);
+            if (key === 'on') {
+                await this.setState(`vms.io.${slug}.on`, on, true);
+            }
+        } catch (err) {
+            this.log.warn(`VMS: ${ch.id} nicht geschaltet: ${err.message}`);
+        }
+        if (key === 'open') {
+            await this.setState(`vms.io.${slug}.open`, false, true);
+        }
+    }
+
     async onVmsMessage(event, d) {
+        if (event === 'io') {
+            if (d && d.channel) {
+                const known = this.vmsIoIds && [...this.vmsIoIds.values()].find(x => x.id === d.channel);
+                await this.vmsIoValue(String(d.channel), { name: d.name, kind: d.kind, door: d.door !== undefined ? d.door : known && known.door, on: d.on });
+            }
+            return;
+        }
         if (!d || typeof d !== 'object' || !d.camera) {
             return;
         }
@@ -446,6 +656,32 @@ class Livecam extends utils.Adapter {
             const objects = Array.isArray(d.objects) ? d.objects : [];
             for (const k of VMS_KINDS) {
                 await this.setState(`${pre}.${k}`, objects.includes(k), true);
+            }
+            if (typeof d.rec === 'boolean') {
+                await this.setState(`${pre}.rec`, d.rec, true);
+            }
+            if (Array.isArray(d.faces)) {
+                await this.setState(`${pre}.faces`, d.faces.join(', '), true);
+                await this.vmsPresence(slug, d.name || String(d.camera), d.faces);
+            }
+            if (Array.isArray(d.faces_live)) {
+                await this.setState(`${pre}.facesLive`, d.faces_live.join(', '), true);
+            }
+            if (typeof d.spoof === 'boolean') {
+                await this.setState(`${pre}.spoof`, d.spoof, true);
+            }
+            if (Array.isArray(d.boxes)) {
+                await this.vmsBoxes(String(d.camera), d.boxes);
+            }
+            return;
+        }
+        if (event === 'face') {
+            const live = d.face_live === true ? true : d.face_live === false ? false : null;
+            await this.setState(`${pre}.lastFace`, typeof d.face === 'string' ? d.face : '', true);
+            await this.setState(`${pre}.lastFaceLive`, live, true);
+            await this.setState(`${pre}.lastFaceTime`, Number(d.start) > 0 ? new Date(Number(d.start) * 1000).toISOString() : new Date().toISOString(), true);
+            if (live === false) {
+                this.log.warn(`VMS: ${d.camera_name || d.camera}: Foto oder Bildschirm vor der Kamera?`);
             }
             return;
         }
@@ -476,6 +712,12 @@ class Livecam extends utils.Adapter {
         await this.setState(`${pre}.lastEventTime`, time, true);
         await this.setState(`${pre}.lastEventImage`, ev.image, true);
         await this.setState('vms.lastEvent', json, true);
+        // SmartView takes the photo of a detection from detect.photoUrl
+        for (const id of (this.vmsBoxCams && this.vmsBoxCams.get(String(d.camera))) || []) {
+            if (ev.image) {
+                await this.setState(`cameras.${id}.detect.photoUrl`, ev.image, true);
+            }
+        }
     }
 
     /** recordMode / enabled written in ioBroker -> PUT /api/cameras/<id> */
@@ -1373,6 +1615,11 @@ class Livecam extends utils.Adapter {
             return;
         }
         const local = id.slice(this.namespace.length + 1);
+        const vio = /^vms\.io\.([^.]+)\.(on|open)$/.exec(local);
+        if (vio) {
+            await this.vmsIoWrite(vio[1], vio[2], state.val);
+            return;
+        }
         const vw = /^vms\.cameras\.([^.]+)\.(recordMode|enabled)$/.exec(local);
         if (vw) {
             await this.vmsWrite(vw[1], vw[2], state.val);

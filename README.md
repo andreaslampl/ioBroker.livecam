@@ -411,6 +411,27 @@ nur eine Verbindung, nämlich die zur VMS.
 | `.enabled` | **schaltbar**: Kamera in der VMS an/aus |
 | `vms.lastEvent` | letztes Ereignis aller Kameras (JSON) |
 
+**Seit VMS 1.3 zusätzlich** (ebenfalls mit „Ereignisse als Datenpunkte“):
+
+| Datenpunkt | Bedeutung |
+| --- | --- |
+| `vms.cameras.<Kamera>.rec` | nimmt gerade wirklich auf („● REC“) |
+| `.faces`, `.facesLive` | gerade erkannte Personen (Komma-Liste), `facesLive` nur mit bestandener Lebenderkennung |
+| `.spoof` | `true`, solange ein Gesicht wie ein Foto / Bildschirm aussieht |
+| `.lastFace`, `.lastFaceLive`, `.lastFaceTime` | letztes ausgewertetes Gesicht (leer = unbekannt; Lebenderkennung `true` / `false` / `null` = ungeprüft, nachts) |
+| `vms.presence.<Name>.present`, `.lastSeen`, `.lastCamera` | Anwesenheit: `true`, solange die Person an irgendeiner Kamera erkannt ist |
+| `vms.io.<Kanal>.on` (+ `name`, `kind`, `door`) | Ein-/Ausgänge der VMS. Ausgänge und virtuelle Kanäle (z. B. „Handy zuhause“) sind schaltbar, Eingänge nur lesbar |
+| `vms.io.<Kanal>.open` | nur bei **Türöffnern**: Taste, schickt einen Impuls. Ein Türöffner lässt sich nie dauerhaft einschalten |
+
+**Rahmen für SmartView:** Für Kameras, die über die VMS in livecam angezeigt werden (Typ VMS oder übernommen) und bei denen
+livecams eigene KI-Erkennung aus ist, schreibt livecam die Rahmen der VMS in `cameras.<Kamera>.detect.boxes` (und
+`detect.person` / `vehicle` / `animal`, `detect.photoUrl` = Foto des letzten Ereignisses). SmartView zeigt sie über dem
+Livebild und kann daraus Meldungen machen, ohne dass auf dem ioBroker eine KI rechnet. Erkannte Personen stehen mit Namen
+am Rahmen, stillstehende Personen und geparkte Autos grau gestrichelt.
+
+**Türöffnen mit Gesicht:** Die VMS meldet nur, *wer* erkannt wurde. Für eine Tür immer eine zweite Bedingung dazunehmen,
+z. B. `facesLive` enthält den Namen **und** `vms.io.handy_zuhause.on`, oder eine Regel direkt in der VMS.
+
 **Klingeln an die VMS** (Haken „Klingeln an die VMS melden“): Wenn die 2N klingelt, meldet livecam das der VMS. Die VMS
 macht Foto und Aufnahme und schickt Push. Welche VMS-Kamera gilt: die eingestellte, sonst die VMS-Kamera hinter der
 Sprechstellen-Kamera, sonst die VMS-Kamera mit der IP der 2N.
