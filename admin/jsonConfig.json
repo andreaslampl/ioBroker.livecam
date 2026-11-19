@@ -171,6 +171,13 @@
               "title": "Plates",
               "width": "5%",
               "default": false
+            },
+            {
+              "type": "checkbox",
+              "attr": "faces",
+              "title": "Faces",
+              "width": "5%",
+              "default": false
             }
           ]
         }
@@ -259,6 +266,68 @@
           "default": false,
           "xs": 12,
           "sm": 6
+        },
+        "faceHeader": {
+          "type": "header",
+          "text": "Faces of the household",
+          "size": 4,
+          "newLine": true
+        },
+        "faceHelp": {
+          "type": "staticText",
+          "text": "Tick 'Faces' in the camera table (the camera needs person detection). Teach in the people on the page /faces of this adapter (photos or live at a camera) - it needs an access key (tab Web server). Only people on that page are recognised; other faces are never stored. Liveness detection catches photos and phones held in front of the camera, but not every screen: for opening a door combine it with something else (e.g. a button, a PIN, only by day).",
+          "xs": 12
+        },
+        "faceMatch": {
+          "type": "number",
+          "label": "Minimum similarity (%)",
+          "default": 45,
+          "min": 30,
+          "max": 90,
+          "help": "higher = fewer mix-ups, but recognised less often",
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        },
+        "faceMinSize": {
+          "type": "number",
+          "label": "Minimum face size (pixels)",
+          "default": 50,
+          "min": 30,
+          "max": 400,
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        },
+        "faceLive": {
+          "type": "checkbox",
+          "label": "Liveness detection",
+          "default": true,
+          "help": "needed for the door release",
+          "newLine": true,
+          "xs": 12,
+          "sm": 6,
+          "md": 3
+        },
+        "faceLiveMin": {
+          "type": "number",
+          "label": "Liveness at least (%)",
+          "default": 80,
+          "min": 30,
+          "max": 99,
+          "xs": 12,
+          "sm": 6,
+          "md": 3,
+          "hidden": "!data.faceLive"
+        },
+        "faceUnknown": {
+          "type": "checkbox",
+          "label": "Report unknown faces",
+          "help": "detect.face = 'unbekannt' (nothing is stored)",
+          "default": false,
+          "xs": 12,
+          "sm": 6,
+          "md": 3
         }
       }
     },

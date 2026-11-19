@@ -77,6 +77,21 @@ existing cameras adapter lost its images after a while and needed restarts.
   PRIVACY: readings not on the list are never stored or logged (only "unbekannt" with plateUnknown) - keep it that way.
   Tests: unit + real models on `test/fixtures/plate-scene.jpg` (self-made drawing); e2e in the scratchpad (lpr/e2e.js,
   bus photo with a pasted synthetic plate, not committed). Synthetic plates read 100 %; not yet on the owner's cameras.
+- Faces (0.8.0, owner asked for face recognition + liveness "for opening doors" when only ioBroker is there): `lib/faces.js`
+  `FaceReader` (Detector's ort + queue): YuNet 2023mar (models/face_detect_yunet.onnx, MIT; 640 letterbox top left, BGR 0..255,
+  `decodeYunet()` cls/obj/bbox/kps per stride, score sqrt(cls*obj), NMS 0.3) on person boxes (upper 60 % + margin, max 2) of a
+  fresh getFrame() via ffmpeg rgb24; `similarity()` + `warp()` to OpenCV's 112x112 landmarks (DST); SFace (face_recog_sface.onnx,
+  Apache-2.0, RGB 0..255; fp32 - the int8 file was 4x slower in WASM); liveness MiniFASNetV2 x2.7 + V1SE x4.0 (80x80 BGR 0..255,
+  class 1 = real, mean) - converted from Silent-Face's legacy .pth WITHOUT torch by `tools/convert-minifasnet.py` (PyPI torch
+  needs the CUDA libs). `FaceStore` faces.json (persons {id, name, door, samples, embeds}, max 20 samples, aligned JPEGs).
+  Page `/faces` (lib/faces-page.js) + API only with an access key (403 / locked page otherwise): add / rename / door / delete,
+  photos (browser converts to JPEG via canvas), learn at a camera 15 s (size >= 60, alive, cosine < 0.92 to existing). main
+  `faceSession()` on person rising edge (once per appearance, `faceDone`; every `faceEvery` 1.5 s, max `faceTries` 10): match
+  >= faceMatch (45 %), liveness >= faceLiveMin (80 %) else warn "Foto oder Bildschirm?" and no hit; `onFace()` -> detect.face/
+  faceKnown/faceScore/faceLive/faceTime, faces.<slug>.present/lastSeen/camera; `faceDoor` only for door persons with liveness on
+  and 2 hits in a row; `faceGone()` on person off. Measured (scratchpad, OpenCV zoo selfie - not committed): same person 0.94,
+  others <= 0.25; liveness real 0.97-0.99, phone with frame 0.00, print 0.39, full-frame moire screen 0.89 (passes) -> README
+  says faceDoor is not a sole door key. ~0.8 s per check on the dev machine. PRIVACY: unknown faces never stored / logged.
 - Optional VMS link (0.7.0, owner's own "Andreas L.-Arts VMS", API.md + ADAPTER-AUFTRAG.md on the owner's PC, pasted
   into the session): `lib/vms.js` `VmsClient` (Bearer key; /api/integration cached 60 s; /api/cameras; PUT
   /api/cameras/<id>; POST /api/events/external; SSE /api/stream with ping watchdog 45 s, backoff 2…60 s, `retry:`

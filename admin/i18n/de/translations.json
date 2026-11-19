@@ -111,5 +111,16 @@
   "when the 2N rings: photo, recording and push in the VMS": "wenn die 2N klingelt: Foto, Aufnahme und Push in der VMS",
   "VMS camera of the door": "VMS-Kamera der Tür",
   "empty = the VMS camera behind the intercom camera, else the one with the IP of the 2N": "leer = die VMS-Kamera hinter der Sprechstellen-Kamera, sonst die mit der IP der 2N",
-  "The camera lists show the cameras of the VMS once address and key are saved.": "Die Auswahllisten zeigen die VMS-Kameras, sobald Adresse und Schlüssel gespeichert sind (Adapter läuft)."
+  "The camera lists show the cameras of the VMS once address and key are saved.": "Die Auswahllisten zeigen die VMS-Kameras, sobald Adresse und Schlüssel gespeichert sind (Adapter läuft).",
+  "Faces": "Gesichter",
+  "Faces of the household": "Gesichter der Bewohner",
+  "Tick 'Faces' in the camera table (the camera needs person detection). Teach in the people on the page /faces of this adapter (photos or live at a camera) - it needs an access key (tab Web server). Only people on that page are recognised; other faces are never stored. Liveness detection catches photos and phones held in front of the camera, but not every screen: for opening a door combine it with something else (e.g. a button, a PIN, only by day).": "In der Kameratabelle „Gesichter“ ankreuzen (die Kamera braucht die Personen-Erkennung). Die Personen auf der Seite /faces dieses Adapters einlernen (Fotos oder live an einer Kamera) – dafür ist ein Zugriffsschlüssel nötig (Reiter Webserver). Erkannt werden nur Personen von dieser Seite; fremde Gesichter werden nie gespeichert. Die Lebenderkennung erkennt Fotos und vorgehaltene Handys, aber nicht jeden Bildschirm: Zum Türöffnen mit etwas anderem kombinieren (z. B. Taster, PIN, nur tagsüber).",
+  "Minimum similarity (%)": "Mindest-Ähnlichkeit (%)",
+  "higher = fewer mix-ups, but recognised less often": "höher = weniger Verwechslungen, aber seltener erkannt",
+  "Minimum face size (pixels)": "Mindestgröße des Gesichts (Pixel)",
+  "Liveness detection": "Lebenderkennung",
+  "needed for the door release": "nötig für die Tür-Freigabe",
+  "Liveness at least (%)": "Lebenderkennung mindestens (%)",
+  "Report unknown faces": "Unbekannte Gesichter melden",
+  "detect.face = 'unbekannt' (nothing is stored)": "detect.face = „unbekannt“ (es wird nichts gespeichert)"
 }

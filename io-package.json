@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "livecam",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "news": {
+      "0.8.0": {
+        "en": "Face recognition of the household's people with liveness detection (page /faces: photos or live at a camera), door release only after two recognitions alive; unknown faces are never stored",
+        "de": "Gesichtserkennung der Bewohner mit Lebenderkennung (Seite /faces: Fotos oder live an der Kamera), Tür-Freigabe nur nach zweimaliger Erkennung und lebend; fremde Gesichter werden nie gespeichert"
+      },
       "0.7.0": {
         "en": "Optional link to the Andreas L.-Arts VMS: camera type VMS (RTSP or MJPEG through the VMS), take over all VMS cameras, events / objects / plates as data points, record mode and camera on/off, ring of the door station reported to the VMS",
         "de": "Optionale Anbindung an die Andreas L.-Arts VMS: Kameratyp VMS (RTSP oder MJPEG über die VMS), alle VMS-Kameras übernehmen, Ereignisse / Objekte / Kennzeichen als Datenpunkte, Aufnahme-Modus und Kamera an/aus, Klingeln der Türsprechstelle an die VMS"
@@ -161,7 +165,12 @@
     "vmsEvents": true,
     "vmsRing": false,
     "vmsRingCamera": "",
-    "vmsFps": 5
+    "vmsFps": 5,
+    "faceMatch": 45,
+    "faceMinSize": 50,
+    "faceLive": true,
+    "faceLiveMin": 80,
+    "faceUnknown": false
   },
   "protectedNative": [
     "accessKey",
@@ -248,6 +257,37 @@
         },
         "type": "string",
         "role": "url",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.facesUrl",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Page to teach in faces",
+          "de": "Seite zum Einlernen der Gesichter"
+        },
+        "type": "string",
+        "role": "url",
+        "read": true,
+        "write": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.faceMs",
+      "type": "state",
+      "common": {
+        "name": {
+          "en": "Faces: average time per check",
+          "de": "Gesichter: durchschnittliche Zeit pro Prüfung"
+        },
+        "type": "number",
+        "role": "value",
+        "unit": "ms",
         "read": true,
         "write": false
       },

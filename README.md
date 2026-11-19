@@ -332,6 +332,45 @@ weder gespeichert noch ins Log geschrieben. Mit „Unbekannte Fahrzeuge melden�
 | `plates.<Fahrzeug>.present` | `true`, solange dieses Fahrzeug an einer Kamera steht |
 | `plates.<Fahrzeug>.lastSeen`, `.camera` | wann und wo zuletzt gesehen |
 
+### Gesichter der Bewohner (mit Lebenderkennung)
+
+livecam kann die **Gesichter eurer eigenen Leute** erkennen, z. B. „Anna ist da“, Licht nach Person oder eine
+Tür-Freigabe.
+
+1. Kameratabelle: Die Kamera braucht die Personen-Erkennung. Dazu die Spalte **„Gesichter“** ankreuzen.
+2. Im Reiter „Webserver“ einen **Zugriffsschlüssel** setzen (Pflicht, sonst könnte jeder im Netz ein Gesicht einlernen).
+3. Die Seite **`/faces`** öffnen (Adresse steht in `info.facesUrl`). Dort Personen anlegen und einlernen:
+   - **Fotos hinzufügen:** 3–10 Fotos von vorne, mit und ohne Brille. Am Handy direkt aus der Fotomediathek.
+   - **An Kamera einlernen:** vor die Kamera stellen, Start drücken und den Kopf langsam etwas drehen (15 s).
+   - **„darf Tür öffnen“** nur bei Personen ankreuzen, die die Tür öffnen dürfen.
+
+Sobald eine Person im Bild ist, sucht livecam alle 1,5 s nach Gesichtern (höchstens 10-mal) und vergleicht sie mit den
+eingelernten Personen.
+
+| Datenpunkt | Bedeutung |
+| --- | --- |
+| `cameras.<Name>.detect.face` | Name der erkannten Person (oder „unbekannt“, wenn angehakt) |
+| `cameras.<Name>.detect.faceKnown` | `true`, solange eine eigene Person da ist (lebend) |
+| `cameras.<Name>.detect.faceDoor` | **Tür-Freigabe:** Person darf öffnen, zweimal hintereinander erkannt, Lebenderkennung bestanden |
+| `cameras.<Name>.detect.faceScore`, `.faceLive` | Ähnlichkeit und Lebenderkennung in % |
+| `faces.<Person>.present`, `.lastSeen`, `.camera` | ist gerade da, wann und wo zuletzt gesehen |
+
+**Lebenderkennung:** prüft, ob ein echter Mensch vor der Kamera steht. Ein vorgehaltenes Handy mit sichtbarem Rand oder
+ein ausgedrucktes Foto fällt durch (im Log: „… erkannt, aber die Lebenderkennung ist nicht bestanden“). Ein Bildschirm,
+der das ganze Bild füllt, kann aber durchgehen. Eine normale Kamera ohne 3D- oder Infrarot-Sensor kann das nicht sicher
+unterscheiden.
+
+**Darum:** `faceDoor` **nicht als einzigen Schlüssel** für die Haustür verwenden. Gut sind z. B. Gesicht **und** Taster an
+der Tür, Gesicht **und** PIN, nur tagsüber, oder für Nebentüren und Garage. Für Licht, Begrüßung, Push und „wer ist da“ passt
+die Gesichtserkennung ohne Einschränkung.
+
+**Datenschutz:** Gespeichert werden nur die eingelernten Personen (Merkmale + kleine Vorschaubilder im Datenordner der Instanz).
+Fremde Gesichter werden nie gespeichert und nicht ins Log geschrieben. Löschen einer Person löscht alles von ihr. Bitte nur
+Personen einlernen, die einverstanden sind.
+
+**Rechenlast:** nur solange eine Person an dieser Kamera ist, etwa 1–2 s pro Prüfung auf einem Celeron J4125. Die Zeit steht in
+`info.faceMs`.
+
 ## Optional: Anbindung an die Andreas L.-Arts VMS
 
 livecam läuft weiter eigenständig wie bisher. Nur wenn im Reiter **„VMS“** eine Adresse **und** ein API-Schlüssel
@@ -420,4 +459,4 @@ getestet: Klingeln, Abnehmen, Ton in beide Richtungen, Türcode, Auflegen, Abbru
 
 MIT. Das Erkennungsmodell `models/yolox_nano.onnx` stammt aus YOLOX von Megvii (Apache-2.0,
 https://github.com/Megvii-BaseDetection/YOLOX); die KI-Laufzeit onnxruntime-web von Microsoft (MIT). Die Kennzeichen-Modelle
-`models/plate_*.onnx` stammen von ankandrew (open-image-models und fast-plate-ocr, MIT), Details in `models/README.md`.
+`models/plate_*.onnx` stammen von ankandrew (open-image-models und fast-plate-ocr, MIT), Details in `models/README.md`. Gesichter: YuNet (MIT), SFace und MiniFASNet (Apache-2.0), ebenfalls dort.

@@ -13,6 +13,7 @@ const { Detector, parseZones, GROUPS, SIZE } = require('./lib/detect');
 const { Watcher, jpegSize } = require('./lib/watch');
 const { PlateReader, parseKnown, match: matchPlate } = require('./lib/plates');
 const { VmsClient, normalizeBase } = require('./lib/vms');
+const { FaceReader, FaceStore, bestMatch, cosine } = require('./lib/faces');
 const fs = require('node:fs');
 
 function localAddress() {
@@ -99,7 +100,7 @@ class Livecam extends utils.Adapter {
             this.sources.set(id, source);
             if (cam.detect) {
                 const groups = String(cam.detect).split(',').filter(g => GROUPS[g]);
-                detectCams.push({ id, name: cam.name || id, groups, plates: Boolean(cam.plates) && groups.includes('vehicle') });
+                detectCams.push({ id, name: cam.name || id, groups, plates: Boolean(cam.plates) && groups.includes('vehicle'), faces: Boolean(cam.faces) && groups.includes('person') });
             }
             await this.createCameraObjects(id, cam.name || id);
             await this.setState(`cameras.${id}.mjpegUrl`, `${base}/cam/${id}.mjpeg${query}`, true);
@@ -130,6 +131,7 @@ class Livecam extends utils.Adapter {
                 cameras: () => [...(this.watchers || new Map()).values()].map(w => ({ id: w.id, name: this.sources.get(w.id).cfg.name, zones: w.zones })),
                 save: (id, zones) => this.saveZones(id, zones),
             },
+            faces: this.faceApi(),
         });
         this.server.setView(view);
         this.subscribeStates('view.display');
@@ -205,12 +207,16 @@ class Livecam extends utils.Adapter {
             w.start();
         }
         await this.startPlates(list.filter(cam => cam.plates && this.watchers.has(cam.id)));
+        await this.startFaces(list.filter(cam => cam.faces && this.watchers.has(cam.id)));
         this.subscribeStates('cameras.*.detect.zones');
         this.log.info(`KI-Erkennung aktiv für ${[...this.watchers.keys()].join(', ')}`);
         // average time of one check, so the CPU load can be judged
         this.detectStats = setInterval(() => {
             if (this.detector && this.detector.runs) {
                 this.setState('info.detectMs', this.detector.avgMs, true);
+            }
+            if (this.faceReader && this.faceReader.runs) {
+                this.setState('info.faceMs', this.faceReader.avgMs, true);
             }
             if (this.plateReader && this.plateReader.runs) {
                 this.setState('info.plateMs', this.plateReader.avgMs, true);
@@ -726,7 +732,333 @@ class Livecam extends utils.Adapter {
         }
     }
 
+    // ---------------- faces of the household (own people only) ----------------
+
+    faceCfg() {
+        const c = this.config;
+        const num = (v, d) => (Number.isFinite(Number(v)) && v !== '' && v !== null && v !== undefined ? Number(v) : d);
+        return {
+            match: Math.min(0.9, Math.max(0.3, num(c.faceMatch, 45) / 100)),
+            live: c.faceLive !== false,
+            liveMin: Math.min(0.99, Math.max(0.3, num(c.faceLiveMin, 80) / 100)),
+            minSize: Math.max(30, num(c.faceMinSize, 50)),
+            unknown: Boolean(c.faceUnknown),
+        };
+    }
+
+    /** API for the page /faces (lib/server.js); works once a camera has face recognition */
+    faceApi() {
+        const need = () => {
+            if (!this.faceStore || !this.faceReader) {
+                throw new Error('Gesichtserkennung ist bei keiner Kamera eingeschaltet');
+            }
+        };
+        const changed = () => this.facePersons().catch(err => this.log.warn(`Gesichter: ${err.message}`));
+        return {
+            enabled: () => Boolean(this.faceStore),
+            list: () => (need(), this.faceStore.list()),
+            cameras: () => [...this.sources.values()].map(s => ({ id: s.id, name: s.cfg.name })),
+            add: (name, door) => {
+                need();
+                const p = this.faceStore.add(name, door);
+                this.log.info(`Gesichter: Person "${p.name}" angelegt${p.door ? ' (darf Tür öffnen)' : ''}`);
+                changed();
+                return { id: p.id };
+            },
+            update: (id, b) => {
+                need();
+                const p = this.faceStore.update(id, b || {});
+                if (b && b.door !== undefined) {
+                    this.log.info(`Gesichter: "${p.name}" darf Tür öffnen: ${p.door ? 'ja' : 'nein'}`);
+                }
+                changed();
+                return { ok: true };
+            },
+            remove: id => {
+                need();
+                const p = this.faceStore.get(id);
+                this.faceStore.remove(id);
+                this.log.info(`Gesichter: Person "${p ? p.name : id}" mit allen Bildern gelöscht`);
+                changed();
+                return { ok: true };
+            },
+            removeSample: (id, sid) => (need(), this.faceStore.removeSample(id, sid), { ok: true }),
+            photo: (id, sid) => (this.faceStore ? this.faceStore.photo(id, sid) : null),
+            addPhoto: async (id, jpeg) => {
+                need();
+                const orig = jpegSize(jpeg);
+                if (!orig) {
+                    throw new Error('kein JPEG-Bild');
+                }
+                const faces = await this.faceReader.read(jpeg, orig, null, { minSize: 40, max: 1 });
+                if (!faces.length) {
+                    throw new Error('kein Gesicht gefunden (Gesicht mindestens 40 Pixel, von vorne)');
+                }
+                const f = faces.sort((a, b) => b.size - a.size)[0];
+                await this.faceSample(id, f);
+                return { ok: true, faces: faces.length, size: f.size };
+            },
+            learn: (id, camera) => (need(), this.faceLearn(id, camera)),
+        };
+    }
+
+    async faceSample(id, f) {
+        const thumb = await this.ffmpegImage(['-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', '112x112', '-i', 'pipe:0'], Buffer.from(f.face)).catch(() => null);
+        this.faceStore.addSample(id, f.embed, thumb);
+    }
+
+    /** live at a camera: 15 s, up to 5 new samples (big enough, alive, not too similar to the ones already there) */
+    async faceLearn(id, camera) {
+        const p = this.faceStore.get(id);
+        const src = this.sources.get(String(camera || ''));
+        if (!p || !src) {
+            throw new Error(!p ? 'Person gibt es nicht' : 'Kamera gibt es nicht');
+        }
+        const cfg = this.faceCfg();
+        const end = Date.now() + (this.faceLearnMs || 15000);
+        let added = 0;
+        let seen = 0;
+        let fake = 0;
+        while (Date.now() < end && added < 5 && (p.samples || []).length < 20) {
+            const jpeg = await src.getFrame(1500, 8000).catch(() => null);
+            const orig = jpeg && jpegSize(jpeg);
+            if (orig) {
+                const faces = (await this.faceReader.read(jpeg, orig, null, { minSize: 60, max: 1 })).sort((a, b) => b.size - a.size);
+                const f = faces[0];
+                if (f) {
+                    seen++;
+                    if (cfg.live && f.live !== null && f.live < cfg.liveMin) {
+                        fake++;
+                    } else if ((p.embeds || []).every(e => cosine(e, f.embed) < 0.92)) {
+                        await this.faceSample(id, f);
+                        added++;
+                    }
+                }
+            }
+            await new Promise(r => setTimeout(r, this.faceLearnGap === undefined ? 700 : this.faceLearnGap));
+        }
+        this.log.info(`Gesichter: "${p.name}" an ${src.cfg.name} eingelernt: ${added} neue(s) Bild(er)`);
+        const hint = !seen ? 'kein Gesicht gesehen (näher hin, Gesicht mindestens 60 Pixel)' : fake && !added ? 'Lebenderkennung nicht bestanden (Licht? Gegenlicht?)' : !added ? 'keine neuen Ansichten (Kopf etwas drehen)' : '';
+        return { added, seen, hint };
+    }
+
+    async startFaces(list) {
+        this.faceCams = new Map(list.map(cam => [cam.id, cam]));
+        if (!list.length) {
+            return;
+        }
+        const dir = path.join(this.dataDir || utils.getAbsoluteInstanceDataDir(this), 'faces');
+        this.faceStore = new FaceStore(dir, { log: this.log });
+        for (const cam of list) {
+            const states = {
+                face: { name: { en: 'Person recognised (name from /faces, or unbekannt)', de: 'Erkannte Person (Name von /faces, oder unbekannt)' }, type: 'string', role: 'text', def: '' },
+                faceKnown: { name: { en: 'Own person recognised (alive)', de: 'Eigene Person erkannt (lebend)' }, type: 'boolean', role: 'indicator', def: false },
+                faceDoor: { name: { en: 'Door release: person may open, alive, recognised twice', de: 'Tür-Freigabe: Person darf öffnen, lebend, zweimal erkannt' }, type: 'boolean', role: 'indicator', def: false },
+                faceScore: { name: { en: 'Similarity', de: 'Ähnlichkeit' }, type: 'number', role: 'value', unit: '%', def: 0 },
+                faceLive: { name: { en: 'Liveness', de: 'Lebenderkennung' }, type: 'number', role: 'value', unit: '%', def: 0 },
+                faceTime: { name: { en: 'Time of the recognition', de: 'Zeit der Erkennung' }, type: 'string', role: 'date', def: '' },
+            };
+            for (const [key, common] of Object.entries(states)) {
+                await this.extendObject(`cameras.${cam.id}.detect.${key}`, { type: 'state', common: { ...common, read: true, write: false }, native: {} });
+            }
+            await this.setState(`cameras.${cam.id}.detect.face`, '', true);
+            await this.setState(`cameras.${cam.id}.detect.faceKnown`, false, true);
+            await this.setState(`cameras.${cam.id}.detect.faceDoor`, false, true);
+        }
+        this.faceReader = new FaceReader({ detector: this.detector, log: this.log, ffmpegPath: (this.config.ffmpegPath || '').trim() || 'ffmpeg', spawnFn: this.spawnFn });
+        try {
+            await this.faceReader.init();
+        } catch (err) {
+            this.log.error(`Gesichtserkennung kann nicht starten: ${err.message}`);
+            this.faceReader = null;
+            return;
+        }
+        this.faceRuns = new Map();
+        this.faceDone = new Set();
+        await this.facePersons();
+        const { base, query } = this.urlBase;
+        await this.setState('info.facesUrl', `${base}/faces${query}`, true);
+        this.log.info(`Gesichtserkennung aktiv für ${list.map(c => c.name).join(', ')} (${this.faceStore.persons.length} Person(en), einlernen auf ${base}/faces${query ? '?key=…' : ''})`);
+    }
+
+    /** faces.<person>.present / lastSeen / camera - follow the list on /faces */
+    async facePersons() {
+        if (!this.faceStore) {
+            return;
+        }
+        await this.extendObject('faces', { type: 'channel', common: { name: { en: 'Recognised people', de: 'Erkannte Personen' } }, native: {} });
+        const slugs = new Map();
+        for (const p of this.faceStore.persons) {
+            let slug = cameraId(p.name, 0);
+            while ([...slugs.values()].includes(slug)) {
+                slug += '_';
+            }
+            slugs.set(p.id, slug);
+        }
+        this.faceSlugs = slugs;
+        const old = await this.getObjectViewAsync('system', 'channel', { startkey: `${this.namespace}.faces.`, endkey: `${this.namespace}.faces.\u9999` }).catch(() => ({ rows: [] }));
+        const want = new Set(slugs.values());
+        for (const row of old.rows) {
+            const slug = row.id.split('.').pop();
+            if (!want.has(slug)) {
+                await this.delObjectAsync(`faces.${slug}`, { recursive: true }).catch(() => {});
+            }
+        }
+        for (const p of this.faceStore.persons) {
+            const slug = slugs.get(p.id);
+            await this.extendObject(`faces.${slug}`, { type: 'channel', common: { name: p.name }, native: { id: p.id } });
+            const states = {
+                present: { name: { en: 'Is there (face recognised)', de: 'Ist da (Gesicht erkannt)' }, type: 'boolean', role: 'sensor.motion', def: false },
+                lastSeen: { name: { en: 'Last seen', de: 'Zuletzt gesehen' }, type: 'string', role: 'date', def: '' },
+                camera: { name: { en: 'Camera', de: 'Kamera' }, type: 'string', role: 'text', def: '' },
+            };
+            for (const [key, common] of Object.entries(states)) {
+                await this.extendObject(`faces.${slug}.${key}`, { type: 'state', common: { ...common, read: true, write: false }, native: {} });
+            }
+            const st = await this.getStateAsync(`faces.${slug}.present`).catch(() => null);
+            if (!st) {
+                await this.setState(`faces.${slug}.present`, false, true);
+            }
+        }
+    }
+
+    /**
+     * While a person is there: look for faces every `faceEvery` ms, at most `faceTries` times. Own people are
+     * reported by name when alive; a person who may open the door additionally gets `faceDoor` after two recognitions
+     * in a row (liveness must be on). Faces not on the list are never stored or logged.
+     */
+    async faceSession(cam) {
+        if (!this.faceReader || this.faceRuns.get(cam.id) || this.faceDone.has(cam.id)) {
+            return;
+        }
+        this.faceDone.add(cam.id);
+        const run = { stop: false };
+        this.faceRuns.set(cam.id, run);
+        const w = this.watchers.get(cam.id);
+        const cfg = this.faceCfg();
+        let unknown = 0;
+        let fakeWarned = false;
+        let reported = null;
+        let last = null;
+        let row = 0;
+        try {
+            for (let i = 0; i < (this.faceTries || 10) && !run.stop && !this.unloading; i++) {
+                if (i) {
+                    await new Promise(r => setTimeout(r, this.faceEvery || 1500));
+                }
+                if (run.stop || !w.state.person || !w.state.person.on) {
+                    break;
+                }
+                const jpeg = await this.sources.get(cam.id).getFrame(2000, 8000).catch(() => null);
+                const orig = jpeg && jpegSize(jpeg);
+                if (!orig) {
+                    continue;
+                }
+                let areas = [];
+                try {
+                    areas = JSON.parse(w.lastBoxes || '[]').filter(b => b.g === 'person');
+                } catch {
+                    // whole picture
+                }
+                areas.sort((a, b) => b.w * b.h - a.w * a.h);
+                const faces = (await this.faceReader.read(jpeg, orig, areas, { minSize: cfg.minSize, max: 2 })).sort((a, b) => b.size - a.size);
+                let hit = null;
+                for (const f of faces) {
+                    const m = bestMatch(f.embed, this.faceStore.persons);
+                    if (!m || m.score < cfg.match) {
+                        if (f.size >= cfg.minSize + 10) {
+                            unknown++;
+                        }
+                        continue;
+                    }
+                    if (cfg.live && f.live !== null && f.live < cfg.liveMin) {
+                        if (!fakeWarned) {
+                            fakeWarned = true;
+                            this.log.warn(`${cam.name}: Gesicht von ${m.name} erkannt, aber die Lebenderkennung ist nicht bestanden (${Math.round(f.live * 100)} %) - Foto oder Bildschirm?`);
+                            await this.setState(`cameras.${cam.id}.detect.faceLive`, Math.round(f.live * 100), true);
+                        }
+                        continue;
+                    }
+                    hit = { ...m, live: f.live };
+                    break;
+                }
+                if (!hit) {
+                    last = null;
+                    row = 0;
+                    continue;
+                }
+                row = last === hit.id ? row + 1 : 1;
+                last = hit.id;
+                if (reported !== hit.id) {
+                    reported = hit.id;
+                    await this.onFace(cam, hit);
+                }
+                const p = this.faceStore.get(hit.id);
+                if (!p || !p.door) {
+                    return;
+                }
+                if (cfg.live && row >= 2) {
+                    await this.setState(`cameras.${cam.id}.detect.faceDoor`, true, true);
+                    this.log.info(`${cam.name}: Tür-Freigabe für ${hit.name} (zweimal erkannt, lebend)`);
+                    return;
+                }
+            }
+            if (!reported && unknown && cfg.unknown) {
+                await this.setState(`cameras.${cam.id}.detect.face`, 'unbekannt', true);
+                await this.setState(`cameras.${cam.id}.detect.faceTime`, new Date().toISOString(), true);
+                this.log.info(`${cam.name}: unbekanntes Gesicht`);
+            }
+        } finally {
+            this.faceRuns.delete(cam.id);
+        }
+    }
+
+    async onFace(cam, m) {
+        const now = new Date().toISOString();
+        await this.setState(`cameras.${cam.id}.detect.face`, m.name, true);
+        await this.setState(`cameras.${cam.id}.detect.faceKnown`, true, true);
+        await this.setState(`cameras.${cam.id}.detect.faceScore`, Math.round(m.score * 100), true);
+        if (m.live !== null && m.live !== undefined) {
+            await this.setState(`cameras.${cam.id}.detect.faceLive`, Math.round(m.live * 100), true);
+        }
+        await this.setState(`cameras.${cam.id}.detect.faceTime`, now, true);
+        const slug = this.faceSlugs && this.faceSlugs.get(m.id);
+        if (slug) {
+            await this.setState(`faces.${slug}.present`, true, true);
+            await this.setState(`faces.${slug}.lastSeen`, now, true);
+            await this.setState(`faces.${slug}.camera`, cam.name, true);
+            this.facePresent = this.facePresent || new Map();
+            this.facePresent.set(slug, cam.id);
+        }
+        this.log.info(`${cam.name}: ${m.name} erkannt (Ähnlichkeit ${Math.round(m.score * 100)} %${m.live !== null && m.live !== undefined ? `, lebend ${Math.round(m.live * 100)} %` : ''})`);
+    }
+
+    async faceGone(cam) {
+        const run = this.faceRuns && this.faceRuns.get(cam.id);
+        if (run) {
+            run.stop = true;
+        }
+        if (this.faceDone) {
+            this.faceDone.delete(cam.id);
+        }
+        await this.setState(`cameras.${cam.id}.detect.faceKnown`, false, true);
+        await this.setState(`cameras.${cam.id}.detect.faceDoor`, false, true);
+        for (const [slug, camId] of this.facePresent || []) {
+            if (camId === cam.id) {
+                this.facePresent.delete(slug);
+                await this.setState(`faces.${slug}.present`, false, true);
+            }
+        }
+    }
+
     async onDetectState(cam, st) {
+        if (st.group === 'person' && this.faceCams && this.faceCams.has(cam.id)) {
+            if (st.on) {
+                this.faceSession(cam).catch(err => this.log.warn(`${cam.name}: Gesichter: ${err.message}`));
+            } else {
+                await this.faceGone(cam);
+            }
+        }
         if (st.group === 'vehicle' && this.plateCams && this.plateCams.has(cam.id)) {
             if (st.on) {
                 this.plateSession(cam).catch(err => this.log.warn(`${cam.name}: Kennzeichen: ${err.message}`));

@@ -16,7 +16,23 @@ Release „arg-plates“), Copyright (c) 2024 ankandrew, Lizenz MIT. Zeichen `0-
 Unverändert übernommen (nur umbenannt).
 SHA-256: 384bbbd2cea3ef54761d3df70822ef3a349ee1a112aeafddbe0e3ba06bc6e47b
 
-MIT-Lizenztext (für beide): Permission is hereby granted, free of charge, to any person obtaining a copy of this
+`face_detect_yunet.onnx` – Gesichter finden: YuNet `face_detection_yunet_2023mar.onnx` aus https://github.com/opencv/opencv_zoo
+(models/face_detection_yunet), Copyright (c) 2020 Shiqi Yu, Lizenz MIT. Unverändert übernommen (nur umbenannt).
+SHA-256: 8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4
+
+`face_recog_sface.onnx` – Gesichter vergleichen: SFace `face_recognition_sface_2021dec.onnx` aus https://github.com/opencv/opencv_zoo
+(models/face_recognition_sface, Beitrag von Yaoyao Zhong, ONNX von Chengrui Wang), Lizenz Apache-2.0
+(https://www.apache.org/licenses/LICENSE-2.0). Unverändert übernommen (nur umbenannt).
+SHA-256: 0ba9fbfa01b5270c96627c4ef784da859931e02f04419c829e83484087c34e79
+
+`face_live_v2.onnx`, `face_live_v1se.onnx` – Lebenderkennung: MiniFASNetV2 / MiniFASNetV1SE (80 × 80) aus
+https://github.com/minivision-ai/Silent-Face-Anti-Spoofing (`resources/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth`,
+`4_0_0_80x80_MiniFASNetV1SE.pth`), Copyright Minivision, Lizenz Apache-2.0. **Geändert:** mit `tools/convert-minifasnet.py`
+von PyTorch nach ONNX umgewandelt (dieselben Gewichte, dasselbe Netz).
+SHA-256: c65bcbc2e1877ddf5f4d5118ec9a9b44c1bfe8c7da7ed4dfa1a349a94f1f569f (v2),
+3b7a2831c1c629b881a3a757d2d2fb4e94c5ea95974621e7eff28d2c8ef6af5b (v1se)
+
+MIT-Lizenztext (Kennzeichen-Modelle und YuNet): Permission is hereby granted, free of charge, to any person obtaining a copy of this
 software and associated documentation files (the "Software"), to deal in the Software without restriction, including
 without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
 Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The
